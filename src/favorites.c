@@ -305,6 +305,8 @@ phosh_favorites_class_init (PhoshFavoritesClass *klass)
   gtk_widget_class_bind_template_child_private (widget_class, PhoshFavorites, evbox_running_activities);
   gtk_widget_class_bind_template_child_private (widget_class, PhoshFavorites, box_running_activities);
 
+  gtk_widget_class_bind_template_callback (widget_class, evbox_button_press_event_cb);
+
   signals[ACTIVITY_LAUNCHED] = g_signal_new ("activity-launched",
       G_TYPE_FROM_CLASS (klass), G_SIGNAL_RUN_LAST, 0, NULL, NULL,
       NULL, G_TYPE_NONE, 0);
@@ -317,6 +319,8 @@ phosh_favorites_class_init (PhoshFavoritesClass *klass)
   signals[ACTIVITY_CLOSED] = g_signal_new ("activity-closed",
       G_TYPE_FROM_CLASS (klass), G_SIGNAL_RUN_LAST, 0, NULL, NULL,
       NULL, G_TYPE_NONE, 0);
+
+  gtk_widget_class_set_css_name (widget_class, "phosh-favorites");
 }
 
 
