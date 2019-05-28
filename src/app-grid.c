@@ -49,8 +49,16 @@ search_apps (gpointer item, gpointer data)
   PhoshAppGrid *self = data;
   PhoshAppGridPrivate *priv = phosh_app_grid_get_instance_private (self);
   GAppInfo *info = item;
-  const char *search = gtk_entry_get_text (GTK_ENTRY (priv->search));
-  const char *str;
+  const char *search = NULL;
+  const char *str = NULL;
+
+  g_return_val_if_fail (priv != NULL, TRUE);
+  g_return_val_if_fail (priv->search != NULL, TRUE);
+
+  search = gtk_entry_get_text (GTK_ENTRY (priv->search));
+
+  if (search == NULL)
+    return TRUE;
 
   if ((str = g_app_info_get_display_name (info)) && strstr (str, search))
     return TRUE;
@@ -94,7 +102,13 @@ static GtkWidget *
 create_launcher (gpointer item,
                  gpointer user_data)
 {
-  return gtk_button_new_with_label ("TODO");
+  GtkWidget *btn =  gtk_button_new_with_label ("TODO");
+
+  g_message ("create launcher for %s", g_app_info_get_display_name (G_APP_INFO (item)));
+
+  gtk_widget_show (btn);
+
+  return btn;
 }
 
 static void
@@ -111,9 +125,9 @@ phosh_app_grid_init (PhoshAppGrid *self)
                                     NULL,
                                     NULL);
   priv->model = gtk_filter_list_model_new (G_LIST_MODEL (sorted),
-                                            search_apps,
-                                            self,
-                                            NULL);
+                                           search_apps,
+                                           self,
+                                           NULL);
   gtk_flow_box_bind_model (GTK_FLOW_BOX (priv->apps), G_LIST_MODEL (priv->model),
                            create_launcher, self, NULL);
 }
@@ -159,7 +173,7 @@ phosh_app_grid_class_init (PhoshAppGridClass *klass)
 
   widget_class->key_press_event = phosh_app_grid_key_press_event;
 
-  gtk_widget_class_set_template_from_resource (widget_class, "/sm/puri/phosh/ui/app_grid.ui");
+  gtk_widget_class_set_template_from_resource (widget_class, "/sm/puri/phosh/ui/app-grid.ui");
 
   gtk_widget_class_bind_template_child_private (widget_class, PhoshAppGrid, search);
   gtk_widget_class_bind_template_child_private (widget_class, PhoshAppGrid, apps);

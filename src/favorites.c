@@ -14,6 +14,7 @@
 
 #include "favorites.h"
 #include "activity.h"
+#include "app-grid.h"
 #include "app-grid-button.h"
 #include "shell.h"
 #include "util.h"
@@ -293,6 +294,8 @@ phosh_favorites_class_init (PhoshFavoritesClass *klass)
   object_class->dispose = phosh_favorites_dispose;
   object_class->constructed = phosh_favorites_constructed;
   widget_class->size_allocate = phosh_favorites_size_allocate;
+
+  g_type_ensure (PHOSH_TYPE_APP_GRID);
 
   gtk_widget_class_set_template_from_resource (widget_class,
                                                "/sm/puri/phosh/ui/favorites.ui");
