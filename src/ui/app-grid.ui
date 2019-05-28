@@ -53,6 +53,7 @@
                     <property name="hexpand">True</property>
                     <property name="homogeneous">True</property>
                     <property name="selection_mode">none</property>
+                    <property name="activate_on_single_click">False</property>
                   </object>
                   <packing>
                     <property name="expand">True</property>

@@ -86,6 +86,27 @@ phosh_app_grid_button_finalize (GObject *object)
 }
 
 static void
+activate_cb (PhoshAppGridButton *self)
+{
+  PhoshAppGridButtonPrivate *priv = phosh_app_grid_button_get_instance_private (self);
+  g_autoptr (GdkAppLaunchContext) context = NULL;
+  g_autoptr (GError) error = NULL;
+
+  g_debug ("Launching %s", g_app_info_get_id (priv->info));
+
+  context = gdk_display_get_app_launch_context (gtk_widget_get_display (GTK_WIDGET (self)));
+
+  g_app_info_launch (G_APP_INFO (priv->info), NULL,
+                     G_APP_LAUNCH_CONTEXT (context), &error);
+
+  if (error) {
+    g_critical ("Failed to launch app %s: %s",
+                g_app_info_get_id (priv->info),
+                error->message);
+  }
+}
+
+static void
 phosh_app_grid_button_class_init (PhoshAppGridButtonClass *klass)
 {
   GObjectClass   *object_class = G_OBJECT_CLASS (klass);
@@ -106,6 +127,8 @@ phosh_app_grid_button_class_init (PhoshAppGridButtonClass *klass)
 
   gtk_widget_class_bind_template_child_private (widget_class, PhoshAppGridButton, icon);
   gtk_widget_class_bind_template_child_private (widget_class, PhoshAppGridButton, label);
+
+  gtk_widget_class_bind_template_callback (widget_class, activate_cb);
 
   gtk_widget_class_set_css_name (widget_class, "phosh-app-grid-button");
 }

@@ -131,3 +131,10 @@ phosh-app-grid {
 phosh-app-grid-button {
     font-size: 0.8rem;
 }
+
+phosh-app-grid-button button, phosh-app-grid-button button:hover {
+    background: none;
+    padding: 0;
+    margin: 0;
+    border: none;
+}
