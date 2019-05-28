@@ -279,7 +279,11 @@ phosh_favorites_constructed (GObject *object)
   gtk_window_set_title (GTK_WINDOW (self), "phosh favorites");
   gtk_window_set_decorated (GTK_WINDOW (self), FALSE);
   gtk_window_resize (GTK_WINDOW (self), width, height);
-  gtk_widget_realize(GTK_WIDGET (self));
+  gtk_widget_realize (GTK_WIDGET (self));
+
+  gtk_style_context_remove_class (
+      gtk_widget_get_style_context (GTK_WIDGET (self)),
+      "background");
 
   /* Close on click */
   g_signal_connect_swapped (priv->evbox_favorites, "button_press_event",
@@ -342,6 +346,8 @@ phosh_favorites_class_init (PhoshFavoritesClass *klass)
   gtk_widget_class_bind_template_child_private (widget_class, PhoshFavorites, evbox_running_apps);
   gtk_widget_class_bind_template_child_private (widget_class, PhoshFavorites, box_running_apps);
 
+  gtk_widget_class_bind_template_callback (widget_class, evbox_button_press_event_cb);
+
   signals[APP_LAUNCHED] = g_signal_new ("app-launched",
       G_TYPE_FROM_CLASS (klass), G_SIGNAL_RUN_LAST, 0, NULL, NULL,
       NULL, G_TYPE_NONE, 0);
@@ -351,6 +357,8 @@ phosh_favorites_class_init (PhoshFavoritesClass *klass)
   signals[SELECTION_ABORTED] = g_signal_new ("selection-aborted",
       G_TYPE_FROM_CLASS (klass), G_SIGNAL_RUN_LAST, 0, NULL, NULL,
       NULL, G_TYPE_NONE, 0);
+
+  gtk_widget_class_set_css_name (widget_class, "phosh-favorites");
 }
 
 

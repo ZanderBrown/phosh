@@ -106,6 +106,8 @@ phosh_app_grid_button_class_init (PhoshAppGridButtonClass *klass)
 
   gtk_widget_class_bind_template_child_private (widget_class, PhoshAppGridButton, icon);
   gtk_widget_class_bind_template_child_private (widget_class, PhoshAppGridButton, label);
+
+  gtk_widget_class_set_css_name (widget_class, "phosh-app-grid-button");
 }
 
 GtkWidget *

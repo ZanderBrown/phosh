@@ -13,7 +13,7 @@
 #include "shell.h"
 #include "wifiinfo.h"
 
-#define WIFI_INFO_DEFAULT_ICON_SIZE GTK_ICON_SIZE_LARGE_TOOLBAR
+#define WIFI_INFO_DEFAULT_ICON_SIZE GTK_ICON_SIZE_SMALL_TOOLBAR
 
 /**
  * SECTION:phosh-wifi-info

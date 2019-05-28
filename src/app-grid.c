@@ -176,6 +176,8 @@ phosh_app_grid_class_init (PhoshAppGridClass *klass)
   gtk_widget_class_bind_template_child_private (widget_class, PhoshAppGrid, apps);
 
   gtk_widget_class_bind_template_callback (widget_class, search_changed);
+
+  gtk_widget_class_set_css_name (widget_class, "phosh-app-grid");
 }
 
 GtkWidget *
