@@ -14,6 +14,7 @@
 
 #include "favorites.h"
 #include "app.h"
+#include "app-grid.h"
 #include "shell.h"
 #include "util.h"
 #include "phosh-private-client-protocol.h"
@@ -330,6 +331,8 @@ phosh_favorites_class_init (PhoshFavoritesClass *klass)
 
   object_class->dispose = phosh_favorites_dispose;
   object_class->constructed = phosh_favorites_constructed;
+
+  g_type_ensure (PHOSH_TYPE_APP_GRID);
 
   gtk_widget_class_set_template_from_resource (widget_class,
                                                "/sm/puri/phosh/ui/favorites.ui");
