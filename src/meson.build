@@ -20,6 +20,8 @@ phosh_settings_sources = [
 libphosh_sources = [
   'app.c',
   'app.h',
+  'app-list-model.c',
+  'app-list-model.h',
   'favorites.c',
   'favorites.h',
   phosh_resources,
