@@ -7,6 +7,7 @@
 #define G_LOG_DOMAIN "phosh-app-grid"
 
 #include "app-grid.h"
+#include "app-grid-button.h"
 #include "app-list-model.h"
 
 #include "gtk-list-models/gtksortlistmodel.h"
@@ -102,9 +103,7 @@ static GtkWidget *
 create_launcher (gpointer item,
                  gpointer user_data)
 {
-  GtkWidget *btn =  gtk_button_new_with_label ("TODO");
-
-  g_message ("create launcher for %s", g_app_info_get_display_name (G_APP_INFO (item)));
+  GtkWidget *btn = phosh_app_grid_button_new (G_APP_INFO (item));
 
   gtk_widget_show (btn);
 
