@@ -19,12 +19,23 @@ struct _PhoshAppGridPrivate {
 
   GtkWidget *search;
   GtkWidget *apps;
+  GtkWidget *apps_revealer;
   GtkWidget *favs;
+  GtkWidget *expand_image;
+
+  gboolean apps_expanded;
 
   GSettings *settings;
 };
 
 G_DEFINE_TYPE_WITH_PRIVATE (PhoshAppGrid, phosh_app_grid, GTK_TYPE_BOX)
+
+enum {
+  PROP_0,
+  PROP_APPS_EXPANDED,
+  LAST_PROP
+};
+static GParamSpec *pspecs[LAST_PROP] = { NULL, };
 
 enum {
   APP_LAUNCHED,
@@ -173,8 +184,21 @@ phosh_app_grid_init (PhoshAppGrid *self)
 {
   PhoshAppGridPrivate *priv = phosh_app_grid_get_instance_private (self);
   GtkSortListModel *sorted;
+  GSimpleActionGroup *actions;
+  GPropertyAction *expand_action;
 
   gtk_widget_init_template (GTK_WIDGET (self));
+
+  actions = g_simple_action_group_new ();
+
+  expand_action = g_property_action_new ("expand", self, "apps-expanded");
+  g_action_map_add_action (G_ACTION_MAP (actions), G_ACTION (expand_action));
+
+  gtk_widget_insert_action_group (GTK_WIDGET (self),
+                                  "app-grid", G_ACTION_GROUP (actions));
+
+  g_object_bind_property (self, "apps-expanded",
+                          priv->apps_revealer, "reveal-child", G_BINDING_DEFAULT);
 
   priv->settings = g_settings_new ("sm.puri.phosh");
   g_signal_connect (priv->settings, "changed::favorites",
@@ -206,6 +230,53 @@ phosh_app_grid_finalize (GObject *object)
   G_OBJECT_CLASS (phosh_app_grid_parent_class)->finalize (object);
 }
 
+static void
+phosh_app_grid_set_property (GObject      *object,
+                                    guint         property_id,
+                                    const GValue *value,
+                                    GParamSpec   *pspec)
+{
+  PhoshAppGrid *self = PHOSH_APP_GRID (object);
+  PhoshAppGridPrivate *priv = phosh_app_grid_get_instance_private (self);
+
+  switch (property_id) {
+    case PROP_APPS_EXPANDED:
+      priv->apps_expanded = g_value_get_boolean (value);
+      if (priv->apps_expanded) {
+        gtk_image_set_from_icon_name (GTK_IMAGE (priv->expand_image),
+                                      "go-down-symbolic",
+                                      GTK_ICON_SIZE_BUTTON);
+      } else {
+        gtk_image_set_from_icon_name (GTK_IMAGE (priv->expand_image),
+                                      "go-up-symbolic",
+                                      GTK_ICON_SIZE_BUTTON);
+      }
+      break;
+    default:
+      G_OBJECT_WARN_INVALID_PROPERTY_ID (object, property_id, pspec);
+      break;
+  }
+}
+
+static void
+phosh_app_grid_get_property (GObject    *object,
+                             guint       property_id,
+                             GValue     *value,
+                             GParamSpec *pspec)
+{
+  PhoshAppGrid *self = PHOSH_APP_GRID (object);
+  PhoshAppGridPrivate *priv = phosh_app_grid_get_instance_private (self);
+
+  switch (property_id) {
+    case PROP_APPS_EXPANDED:
+      g_value_set_boolean (value, priv->apps_expanded);
+      break;
+    default:
+      G_OBJECT_WARN_INVALID_PROPERTY_ID (object, property_id, pspec);
+      break;
+  }
+}
+
 static gboolean
 phosh_app_grid_key_press_event (GtkWidget   *widget,
                               GdkEventKey *event)
@@ -233,6 +304,15 @@ phosh_app_grid_class_init (PhoshAppGridClass *klass)
   GtkWidgetClass *widget_class = GTK_WIDGET_CLASS (klass);
 
   object_class->finalize = phosh_app_grid_finalize;
+  object_class->set_property = phosh_app_grid_set_property;
+  object_class->get_property = phosh_app_grid_get_property;
+
+  pspecs[PROP_APPS_EXPANDED] =
+    g_param_spec_boolean ("apps-expanded", "Apps expanded", "Showing complete app tray",
+                          FALSE,
+                          G_PARAM_READWRITE);
+
+  g_object_class_install_properties (object_class, LAST_PROP, pspecs);
 
   widget_class->key_press_event = phosh_app_grid_key_press_event;
 
@@ -240,7 +320,9 @@ phosh_app_grid_class_init (PhoshAppGridClass *klass)
 
   gtk_widget_class_bind_template_child_private (widget_class, PhoshAppGrid, search);
   gtk_widget_class_bind_template_child_private (widget_class, PhoshAppGrid, apps);
+  gtk_widget_class_bind_template_child_private (widget_class, PhoshAppGrid, apps_revealer);
   gtk_widget_class_bind_template_child_private (widget_class, PhoshAppGrid, favs);
+  gtk_widget_class_bind_template_child_private (widget_class, PhoshAppGrid, expand_image);
 
   gtk_widget_class_bind_template_callback (widget_class, search_changed);
 

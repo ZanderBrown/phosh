@@ -59,8 +59,7 @@ phosh-app box {
 }
 
 .phosh-running-apps-flowbox {
-    padding-top: 10px;
-    padding-bottom: 10px;
+    padding: 10px;
 }
 
 phosh-home, .phosh-panel {

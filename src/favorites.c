@@ -38,6 +38,7 @@ typedef struct
   /* Running apps */
   GtkWidget *sw_running_apps;
   GtkWidget *box_running_apps;
+  GtkWidget *revealer_running_apps;
   struct phosh_private_xdg_switcher *xdg_switcher;
 
   GtkWidget *app_grid;
@@ -222,6 +223,9 @@ phosh_favorites_constructed (GObject *object)
                     self);
   g_signal_connect (priv->app_grid, "app-launched",
                     G_CALLBACK (app_launched_cb), self);
+
+  g_object_bind_property (priv->app_grid, "apps-expanded",
+                          priv->revealer_running_apps, "reveal-child", G_BINDING_INVERT_BOOLEAN);
 }
 
 
@@ -254,8 +258,8 @@ phosh_favorites_class_init (PhoshFavoritesClass *klass)
   gtk_widget_class_set_template_from_resource (widget_class,
                                                "/sm/puri/phosh/ui/favorites.ui");
 
+  gtk_widget_class_bind_template_child_private (widget_class, PhoshFavorites, revealer_running_apps);
   gtk_widget_class_bind_template_child_private (widget_class, PhoshFavorites, sw_running_apps);
-  gtk_widget_class_bind_template_child_private (widget_class, PhoshFavorites, box_running_apps);
   gtk_widget_class_bind_template_child_private (widget_class, PhoshFavorites, app_grid);
 
   gtk_widget_class_bind_template_callback (widget_class, evbox_button_press_event_cb);

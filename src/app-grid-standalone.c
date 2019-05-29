@@ -28,10 +28,12 @@ css_setup (void)
 }
 
 int
-main(int argc, char *argv[])
+main (int argc, char *argv[])
 {
   GtkWidget *win;
-  GtkWidget *grid;
+  GtkWidget *box;
+  GtkWidget *widget;
+  GtkWidget *revealer;
 
   gtk_init (&argc, &argv);
 
@@ -42,14 +44,41 @@ main(int argc, char *argv[])
                 NULL);
 
   win = gtk_window_new (GTK_WINDOW_TOPLEVEL);
-  gtk_style_context_remove_class (gtk_widget_get_style_context (win),
-                                  "background");
-  grid = g_object_new (PHOSH_TYPE_APP_GRID, NULL);
 
-  gtk_container_add (GTK_CONTAINER (win), grid);
-
-  gtk_widget_show (grid);
   gtk_widget_show (win);
+
+  box = gtk_box_new (GTK_ORIENTATION_VERTICAL, 0);
+
+  gtk_container_add (GTK_CONTAINER (win), box);
+
+  gtk_widget_show (box);
+
+  revealer = g_object_new (GTK_TYPE_REVEALER,
+                           "reveal-child", TRUE,
+                           "expand", TRUE,
+                           FALSE);
+
+  gtk_widget_show (revealer);
+
+  gtk_container_add (GTK_CONTAINER (box), revealer);
+
+  widget = g_object_new (GTK_TYPE_LABEL,
+                         "label", "Running Apps",
+                         "expand", TRUE,
+                         NULL);
+
+  gtk_widget_show (widget);
+
+  gtk_container_add (GTK_CONTAINER (revealer), widget);
+
+  widget = g_object_new (PHOSH_TYPE_APP_GRID, NULL);
+
+  g_object_bind_property (widget, "apps-expanded",
+                          revealer, "reveal-child", G_BINDING_INVERT_BOOLEAN);
+
+  gtk_widget_show (widget);
+
+  gtk_container_add (GTK_CONTAINER (box), widget);
 
   gtk_main ();
 
