@@ -4,6 +4,8 @@
  * SPDX-License-Identifier: GPL-3.0+
  */
 
+#define G_LOG_DOMAIN "phosh-app-grid-button"
+
 #include "app-grid-button.h"
 
 typedef struct _PhoshAppGridButtonPrivate PhoshAppGridButtonPrivate;

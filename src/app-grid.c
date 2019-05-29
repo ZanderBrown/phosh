@@ -4,6 +4,8 @@
  * SPDX-License-Identifier: GPL-3.0+
  */
 
+#define G_LOG_DOMAIN "phosh-app-grid"
+
 #include "app-grid.h"
 #include "app-grid-button.h"
 #include "app-list-model.h"
