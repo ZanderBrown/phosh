@@ -43,7 +43,9 @@
               <object class="GtkLabel" id="label">
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
+                <property name="no_show_all">True</property>
                 <property name="label" translatable="yes">App</property>
+                <property name="justify">center</property>
                 <property name="wrap">True</property>
                 <property name="ellipsize">end</property>
                 <property name="max_width_chars">10</property>

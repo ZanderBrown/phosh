@@ -117,13 +117,22 @@ close_menu (struct popup **popup)
 
 
 static void
-close_favorites_menu_cb (PhoshShell *self,
+close_favorites_menu_cb (PhoshShell     *self,
                          PhoshFavorites *favorites)
 {
   PhoshShellPrivate *priv = phosh_shell_get_instance_private (self);
 
   g_return_if_fail (priv->favorites);
   close_menu (&priv->favorites);
+}
+
+
+static void
+app_launched_cb (PhoshShell     *self,
+                 GAppInfo       *info,
+                 PhoshFavorites *favorites)
+{
+  close_favorites_menu_cb (self, favorites);
 }
 
 
@@ -225,7 +234,7 @@ home_activated_cb (PhoshShell *self,
 
   g_signal_connect_swapped (priv->favorites->window,
                             "app-launched",
-                            G_CALLBACK(close_favorites_menu_cb),
+                            G_CALLBACK (app_launched_cb),
                             self);
   g_signal_connect_swapped (priv->favorites->window,
                             "app-raised",

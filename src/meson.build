@@ -127,5 +127,10 @@ phosh_dep = declare_dependency(sources: libphosh_sources,
 
 phosh = executable('phosh', phosh_sources,
                    dependencies: phosh_dep,
-  install: true,
+                    install: true,
                    install_dir: libexecdir)
+
+executable('app-grid-standalone', 'app-grid-standalone.c',
+  dependencies: phosh_dep,
+  install: false,
+)
