@@ -30,7 +30,8 @@
     </child>
     <child>
       <object class="GtkSearchEntry" id="search">
-        <property name="visible">True</property>
+        <property name="visible">False</property>
+        <property name="no-show-all">True</property>
         <property name="can_focus">True</property>
         <property name="margin_left">6</property>
         <property name="margin_right">6</property>
