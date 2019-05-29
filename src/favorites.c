@@ -40,11 +40,12 @@ typedef struct
   /* Favorites */
   GtkWidget *evbox_favorites;
   GtkWidget *fb_favorites;
-  GSettings *settings;
 
   /* Running activities */
   GtkWidget *evbox_running_activities;
   GtkWidget *box_running_activities;
+
+  GtkWidget *app_grid;
 
 } PhoshFavoritesPrivate;
 
@@ -185,50 +186,6 @@ app_launched_cb (PhoshFavorites *self,
 }
 
 
-static GtkWidget*
-create_favorite (PhoshFavorites *self,
-                 const gchar    *favorite)
-{
-  GDesktopAppInfo *info;
-  GtkWidget *btn;
-
-  info = g_desktop_app_info_new (favorite);
-  if (!info)
-    return NULL;
-
-  btn = phosh_app_grid_button_new_favorite (G_APP_INFO (info));
-
-  g_signal_connect_swapped (btn, "app-launched",
-                            G_CALLBACK (app_launched_cb), self);
-
-  return btn;
-}
-
-
-static void
-favorites_changed (GSettings *settings,
-                   const gchar *key,
-                   PhoshFavorites *self)
-{
-  PhoshFavoritesPrivate *priv = phosh_favorites_get_instance_private (self);
-  g_auto(GStrv) favorites = g_settings_get_strv (settings, key);
-  GtkWidget *btn;
-
-  /* Remove all favorites first */
-  gtk_container_foreach (GTK_CONTAINER (priv->fb_favorites),
-                         (GtkCallback) gtk_widget_destroy, NULL);
-
-  for (gint i = 0; i < g_strv_length (favorites); i++) {
-    gchar *fav = favorites[i];
-    btn = create_favorite (self, fav);
-    if (btn) {
-      gtk_flow_box_insert (GTK_FLOW_BOX (priv->fb_favorites), btn, -1);
-      gtk_widget_show (btn);
-    }
-  }
-}
-
-
 static gboolean
 evbox_button_press_event_cb (PhoshFavorites *self, GdkEventButton *event)
 {
@@ -253,11 +210,6 @@ phosh_favorites_constructed (GObject *object)
                             self);
   gtk_widget_set_events (priv->evbox_favorites, GDK_BUTTON_PRESS_MASK);
 
-  priv->settings = g_settings_new ("sm.puri.phosh");
-  g_signal_connect (priv->settings, "changed::favorites",
-                    G_CALLBACK (favorites_changed), self);
-  favorites_changed (priv->settings, "favorites", self);
-
   /* Close on click */
   g_signal_connect_swapped (priv->evbox_running_activities, "button_press_event",
                             G_CALLBACK (evbox_button_press_event_cb),
@@ -270,28 +222,18 @@ phosh_favorites_constructed (GObject *object)
                            G_CONNECT_SWAPPED);
 
   get_running_activities (self);
-}
 
-
-static void
-phosh_favorites_dispose (GObject *object)
-{
-  PhoshFavorites *self = PHOSH_FAVORITES (object);
-  PhoshFavoritesPrivate *priv = phosh_favorites_get_instance_private (self);
-
-  g_clear_object (&priv->settings);
-
-  G_OBJECT_CLASS (phosh_favorites_parent_class)->dispose (object);
+  g_signal_connect_swapped (priv->app_grid, "app-launched",
+                            G_CALLBACK (app_launched_cb), self);
 }
 
 
 static void
 phosh_favorites_class_init (PhoshFavoritesClass *klass)
 {
-  GObjectClass *object_class = (GObjectClass *)klass;
+  GObjectClass *object_class = G_OBJECT_CLASS (klass);
   GtkWidgetClass *widget_class = GTK_WIDGET_CLASS (klass);
 
-  object_class->dispose = phosh_favorites_dispose;
   object_class->constructed = phosh_favorites_constructed;
   widget_class->size_allocate = phosh_favorites_size_allocate;
 
@@ -304,6 +246,7 @@ phosh_favorites_class_init (PhoshFavoritesClass *klass)
   gtk_widget_class_bind_template_child_private (widget_class, PhoshFavorites, fb_favorites);
   gtk_widget_class_bind_template_child_private (widget_class, PhoshFavorites, evbox_running_activities);
   gtk_widget_class_bind_template_child_private (widget_class, PhoshFavorites, box_running_activities);
+  gtk_widget_class_bind_template_child_private (widget_class, PhoshFavorites, app_grid);
 
   gtk_widget_class_bind_template_callback (widget_class, evbox_button_press_event_cb);
 

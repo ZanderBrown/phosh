@@ -164,6 +164,11 @@ phosh-app-grid {
     background: rgba(0,0,0,0.4);
 }
 
+phosh-app-grid separator {
+    background: gray;
+    padding: 1px;
+}
+
 phosh-app-grid-button {
     font-size: 0.8rem;
 }
