@@ -37,13 +37,9 @@ static guint signals[N_SIGNALS] = { 0 };
 
 typedef struct
 {
-  /* Favorites */
-  GtkWidget *evbox_favorites;
-  GtkWidget *fb_favorites;
-
   /* Running activities */
-  GtkWidget *evbox_running_activities;
   GtkWidget *box_running_activities;
+  GtkWidget *revealer_running_apps;
 
   GtkWidget *app_grid;
 
@@ -204,18 +200,6 @@ phosh_favorites_constructed (GObject *object)
 
   G_OBJECT_CLASS (phosh_favorites_parent_class)->constructed (object);
 
-  /* Close on click */
-  g_signal_connect_swapped (priv->evbox_favorites, "button_press_event",
-                            G_CALLBACK (evbox_button_press_event_cb),
-                            self);
-  gtk_widget_set_events (priv->evbox_favorites, GDK_BUTTON_PRESS_MASK);
-
-  /* Close on click */
-  g_signal_connect_swapped (priv->evbox_running_activities, "button_press_event",
-                            G_CALLBACK (evbox_button_press_event_cb),
-                            self);
-  gtk_widget_set_events (priv->evbox_running_activities, GDK_BUTTON_PRESS_MASK);
-
   g_signal_connect_object (toplevel_manager, "toplevel-added",
                            G_CALLBACK (toplevel_added_cb),
                            self,
@@ -225,6 +209,9 @@ phosh_favorites_constructed (GObject *object)
 
   g_signal_connect_swapped (priv->app_grid, "app-launched",
                             G_CALLBACK (app_launched_cb), self);
+
+  g_object_bind_property (priv->app_grid, "apps-expanded",
+                          priv->revealer_running_apps, "reveal-child", G_BINDING_INVERT_BOOLEAN);
 }
 
 
@@ -242,10 +229,8 @@ phosh_favorites_class_init (PhoshFavoritesClass *klass)
   gtk_widget_class_set_template_from_resource (widget_class,
                                                "/sm/puri/phosh/ui/favorites.ui");
 
-  gtk_widget_class_bind_template_child_private (widget_class, PhoshFavorites, evbox_favorites);
-  gtk_widget_class_bind_template_child_private (widget_class, PhoshFavorites, fb_favorites);
-  gtk_widget_class_bind_template_child_private (widget_class, PhoshFavorites, evbox_running_activities);
   gtk_widget_class_bind_template_child_private (widget_class, PhoshFavorites, box_running_activities);
+  gtk_widget_class_bind_template_child_private (widget_class, PhoshFavorites, revealer_running_apps);
   gtk_widget_class_bind_template_child_private (widget_class, PhoshFavorites, app_grid);
 
   gtk_widget_class_bind_template_callback (widget_class, evbox_button_press_event_cb);
