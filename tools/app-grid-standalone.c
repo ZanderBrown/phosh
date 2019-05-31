@@ -10,6 +10,8 @@
 
 #include <app-grid.h>
 
+#include "search/search-provider.h"
+
 static void
 css_setup (void)
 {
@@ -55,6 +57,8 @@ main (int argc, char *argv[])
   gtk_widget_show (widget);
 
   gtk_container_add (GTK_CONTAINER (win), widget);
+
+  find_them ();
 
   gtk_main ();
 

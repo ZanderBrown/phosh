@@ -109,6 +109,7 @@
         <title>Search Library</title>
         <xi:include href="xml/search-result-meta.xml"/>
         <xi:include href="xml/search-source.xml"/>
+        <xi:include href="xml/gnome-shell-search-provider.xml"/>
       </section>
     </chapter>
 
