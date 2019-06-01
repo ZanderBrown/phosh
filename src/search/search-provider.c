@@ -1,17 +1,38 @@
 /*
  * Copyright © 2019 Zander Brown <zbrown@gnome.org>
  *
+ * Inspired by search.js:
+ * https://gitlab.gnome.org/GNOME/gnome-shell/blob/2d2824b947754abf0ddadd9c1ba9b9f16b0745d3/js/ui/search.js
+ *
  * SPDX-License-Identifier: GPL-3.0+
  */
 
 #define G_LOG_DOMIAN "phosh-search-provider"
 
 #include "search-provider.h"
+#include "app-list-model.h"
 
 #define GROUP_NAME "Shell Search Provider"
+#define SEARCH_PROVIDERS_SCHEMA "org.gnome.desktop.search-providers"
 
-void
-find_them (void)
+typedef struct _PhoshSearchPrivate PhoshSearchPrivate;
+struct _PhoshSearchPrivate {
+  GSettings *settings;
+};
+
+G_DEFINE_TYPE_WITH_PRIVATE (PhoshSearch, phosh_search, G_TYPE_OBJECT)
+
+static void
+phosh_search_class_init (PhoshSearchClass *klass)
+{
+
+}
+
+// Don't rely on settings or key, they are null when called due to app change
+static void
+reload_providers (GSettings   *settings,
+                  char        *key,
+                  PhoshSearch *self)
 {
   const char *const *data_dirs = g_get_system_data_dirs ();
   const char *data_dir = NULL;
@@ -75,4 +96,35 @@ find_them (void)
       g_message ("We got one! %s", provider);
     }
   }
+}
+
+static void
+reload_providers_apps_changed (GListModel  *list,
+                               guint        position,
+                               guint        removed,
+                               guint        added,
+                               PhoshSearch *self)
+{
+  reload_providers (NULL, NULL, self);
+}
+
+static void
+phosh_search_init (PhoshSearch *self)
+{
+  PhoshSearchPrivate *priv = phosh_search_get_instance_private (self);
+
+  priv->settings = g_settings_new (SEARCH_PROVIDERS_SCHEMA);
+  g_signal_connect (priv->settings, "changed::disabled",
+                    G_CALLBACK (reload_providers), self);
+  g_signal_connect (priv->settings, "changed::enabled",
+                    G_CALLBACK (reload_providers), self);
+  g_signal_connect (priv->settings, "changed::disable-external",
+                    G_CALLBACK (reload_providers), self);
+  g_signal_connect (priv->settings, "changed::sort-order",
+                    G_CALLBACK (reload_providers), self);
+
+  g_signal_connect (phosh_app_list_model_get_default (), "items-changed",
+                    G_CALLBACK (reload_providers_apps_changed), self);
+
+  reload_providers (NULL, NULL, self);
 }

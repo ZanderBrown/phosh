@@ -58,7 +58,8 @@ main (int argc, char *argv[])
 
   gtk_container_add (GTK_CONTAINER (win), widget);
 
-  find_them ();
+  // find_them ();
+  g_object_new (PHOSH_TYPE_SEARCH, NULL);
 
   gtk_main ();
 
