@@ -10,6 +10,13 @@
 
 G_BEGIN_DECLS
 
-void find_them (void);
+#define PHOSH_TYPE_SEARCH phosh_search_get_type()
+G_DECLARE_DERIVABLE_TYPE (PhoshSearch, phosh_search, PHOSH, SEARCH, GObject)
+
+struct _PhoshSearchClass
+{
+  GObjectClass parent_class;
+};
+
 
 G_END_DECLS
