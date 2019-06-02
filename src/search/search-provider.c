@@ -1,130 +1,188 @@
 /*
  * Copyright © 2019 Zander Brown <zbrown@gnome.org>
  *
- * Inspired by search.js:
+ * Inspired by search.js / remoteSearch.js:
  * https://gitlab.gnome.org/GNOME/gnome-shell/blob/2d2824b947754abf0ddadd9c1ba9b9f16b0745d3/js/ui/search.js
+ * https://gitlab.gnome.org/GNOME/gnome-shell/blob/0a7e717e0e125248bace65e170a95ae12e3cdf38/js/ui/remoteSearch.js
  *
  * SPDX-License-Identifier: GPL-3.0+
  */
 
-#define G_LOG_DOMIAN "phosh-search-provider"
+#define G_LOG_DOMAIN "phosh-search-provider"
 
 #include "search-provider.h"
-#include "app-list-model.h"
+#include "dbus/gnome-shell-search-provider.h"
 
-#define GROUP_NAME "Shell Search Provider"
-#define SEARCH_PROVIDERS_SCHEMA "org.gnome.desktop.search-providers"
-
-typedef struct _PhoshSearchPrivate PhoshSearchPrivate;
-struct _PhoshSearchPrivate {
-  GSettings *settings;
+typedef struct _PhoshSearchProviderPrivate PhoshSearchProviderPrivate;
+struct _PhoshSearchProviderPrivate {
+  GAppInfo                 *info;
+  PhoshDBusSearchProvider2 *proxy;
+  GCancellable             *cancellable;
+  GDBusProxyFlags           proxy_flags;
+  char                     *bus_name;
+  char                     *bus_path;
 };
 
-G_DEFINE_TYPE_WITH_PRIVATE (PhoshSearch, phosh_search, G_TYPE_OBJECT)
+G_DEFINE_TYPE_WITH_PRIVATE (PhoshSearchProvider, phosh_search_provider, G_TYPE_OBJECT)
+
+enum {
+  PROP_0,
+  PROP_APP_INFO,
+  PROP_APP_ID,
+  PROP_BUS_NAME,
+  PROP_BUS_PATH,
+  LAST_PROP
+};
+static GParamSpec *pspecs[LAST_PROP] = { NULL, };
 
 static void
-phosh_search_class_init (PhoshSearchClass *klass)
+got_proxy (GObject      *source_object,
+           GAsyncResult *res,
+           gpointer      user_data)
 {
+  PhoshSearchProvider *self = PHOSH_SEARCH_PROVIDER (user_data);
+  PhoshSearchProviderPrivate *priv = phosh_search_provider_get_instance_private (self);
+  g_autoptr (GError) error = NULL;
 
+  priv->proxy = phosh_dbus_search_provider2_proxy_new_for_bus_finish (res, &error);
+
+  if (error) {
+    g_warning ("Unable to create proxy for %s-%s: %s",
+               priv->bus_name,
+               priv->bus_path,
+               error->message);
+    return;
+  }
+
+  g_debug ("Got proxy for %s%s",
+           priv->bus_name,
+           priv->bus_path);
 }
 
-// Don't rely on settings or key, they are null when called due to app change
 static void
-reload_providers (GSettings   *settings,
-                  char        *key,
-                  PhoshSearch *self)
+phosh_search_provider_constructed (GObject *object)
 {
-  const char *const *data_dirs = g_get_system_data_dirs ();
-  const char *data_dir = NULL;
-  int i = 0;
+  PhoshSearchProvider *self = PHOSH_SEARCH_PROVIDER (object);
+  PhoshSearchProviderPrivate *priv = phosh_search_provider_get_instance_private (self);
 
-  while ((data_dir = data_dirs[i])) {
-    g_autofree char *dir = NULL;
-    g_autoptr (GError) error = NULL;
-    g_autoptr (GDir) list = NULL;
-    const char* name = NULL;
+  G_OBJECT_CLASS (phosh_search_provider_parent_class)->constructed (object);
 
-    i++;
+  phosh_dbus_search_provider2_proxy_new_for_bus (G_BUS_TYPE_SESSION,
+                                                 priv->proxy_flags,
+                                                 priv->bus_name,
+                                                 priv->bus_path,
+                                                 priv->cancellable,
+                                                 got_proxy,
+                                                 self);
+}
 
-    dir = g_build_filename (data_dir, "gnome-shell", "search-providers", NULL);
-    list = g_dir_open (dir, 0, &error);
+static void
+phosh_search_provider_finalize (GObject *object)
+{
+  PhoshSearchProvider *self = PHOSH_SEARCH_PROVIDER (object);
+  PhoshSearchProviderPrivate *priv = phosh_search_provider_get_instance_private (self);
 
-    g_message ("look in %s", dir);
+  // Stop any operations still in flight
+  g_cancellable_cancel (priv->cancellable);
 
-    if (error) {
-      if (!g_error_matches (error, G_FILE_ERROR, G_FILE_ERROR_NOENT)) {
-        g_warning ("Can't look for in %s: %s", dir, error->message);
-      }
-      g_clear_error (&error);
-      continue;
-    }
+  g_clear_object (&priv->info);
+  g_clear_object (&priv->proxy);
+  g_clear_object (&priv->cancellable);
 
-    while ((name = g_dir_read_name (list))) {
-      g_autofree char *provider = NULL;
-      g_autoptr (GKeyFile) data = NULL;
-      int version = 0;
+  g_clear_pointer (&priv->bus_name, g_free);
+  g_clear_pointer (&priv->bus_path, g_free);
 
-      provider = g_build_filename (dir, name, NULL);
-      data = g_key_file_new ();
+  G_OBJECT_CLASS (phosh_search_provider_parent_class)->finalize (object);
+}
 
-      g_key_file_load_from_file (data, provider, G_KEY_FILE_NONE, &error);
+static void
+phosh_search_provider_set_property (GObject      *object,
+                                    guint         property_id,
+                                    const GValue *value,
+                                    GParamSpec   *pspec)
+{
+  PhoshSearchProvider *self = PHOSH_SEARCH_PROVIDER (object);
+  PhoshSearchProviderPrivate *priv = phosh_search_provider_get_instance_private (self);
 
-      if (error) {
-        g_warning ("Can't read %s: %s", provider, error->message);
-        g_clear_error (&error);
-        continue;
-      }
-
-      if (!g_key_file_has_group (data, GROUP_NAME)) {
-        g_warning ("%s doesn't define a search provider", provider);
-        continue;
-      }
-
-      version = g_key_file_get_integer (data, GROUP_NAME, "Version", &error);
-
-      if (error) {
-        g_warning ("Failed to fetch provider version %s: %s", provider, error->message);
-        g_clear_error (&error);
-        continue;
-      }
-
-      if (version != 2) {
-        g_warning ("Provider %s implements version %i but we only support version 2", provider, version);
-        continue;
-      }
-
-      g_message ("We got one! %s", provider);
-    }
+  switch (property_id) {
+    case PROP_APP_INFO:
+      priv->info = g_value_dup_object (value);
+      break;
+    case PROP_BUS_NAME:
+      priv->bus_name = g_value_dup_string (value);
+      break;
+    case PROP_BUS_PATH:
+      priv->bus_path = g_value_dup_string (value);
+      break;
+    default:
+      G_OBJECT_WARN_INVALID_PROPERTY_ID (object, property_id, pspec);
+      break;
   }
 }
 
 static void
-reload_providers_apps_changed (GListModel  *list,
-                               guint        position,
-                               guint        removed,
-                               guint        added,
-                               PhoshSearch *self)
+phosh_search_provider_get_property (GObject    *object,
+                                    guint       property_id,
+                                    GValue     *value,
+                                    GParamSpec *pspec)
 {
-  reload_providers (NULL, NULL, self);
+  PhoshSearchProvider *self = PHOSH_SEARCH_PROVIDER (object);
+  PhoshSearchProviderPrivate *priv = phosh_search_provider_get_instance_private (self);
+
+  switch (property_id) {
+    case PROP_APP_INFO:
+      g_value_set_object (value, priv->info);
+      break;
+    case PROP_APP_ID:
+      g_value_set_string (value, g_app_info_get_id (priv->info));
+      break;
+    case PROP_BUS_NAME:
+      g_value_set_string (value, g_app_info_get_id (priv->info));
+      break;
+    case PROP_BUS_PATH:
+      g_value_set_string (value, g_app_info_get_id (priv->info));
+      break;
+    default:
+      G_OBJECT_WARN_INVALID_PROPERTY_ID (object, property_id, pspec);
+      break;
+  }
 }
 
 static void
-phosh_search_init (PhoshSearch *self)
+phosh_search_provider_class_init (PhoshSearchProviderClass *klass)
 {
-  PhoshSearchPrivate *priv = phosh_search_get_instance_private (self);
+  GObjectClass   *object_class = G_OBJECT_CLASS (klass);
 
-  priv->settings = g_settings_new (SEARCH_PROVIDERS_SCHEMA);
-  g_signal_connect (priv->settings, "changed::disabled",
-                    G_CALLBACK (reload_providers), self);
-  g_signal_connect (priv->settings, "changed::enabled",
-                    G_CALLBACK (reload_providers), self);
-  g_signal_connect (priv->settings, "changed::disable-external",
-                    G_CALLBACK (reload_providers), self);
-  g_signal_connect (priv->settings, "changed::sort-order",
-                    G_CALLBACK (reload_providers), self);
+  object_class->constructed = phosh_search_provider_constructed;
+  object_class->finalize = phosh_search_provider_finalize;
+  object_class->set_property = phosh_search_provider_set_property;
+  object_class->get_property = phosh_search_provider_get_property;
 
-  g_signal_connect (phosh_app_list_model_get_default (), "items-changed",
-                    G_CALLBACK (reload_providers_apps_changed), self);
+  pspecs[PROP_APP_INFO] =
+    g_param_spec_object ("app-info", "App info", "Application info",
+                         G_TYPE_APP_INFO,
+                         G_PARAM_READWRITE | G_PARAM_CONSTRUCT_ONLY);
 
-  reload_providers (NULL, NULL, self);
+  pspecs[PROP_APP_ID] =
+    g_param_spec_string ("app-id", "App id", "Application id",
+                         NULL,
+                         G_PARAM_READABLE);
+
+  pspecs[PROP_BUS_NAME] =
+    g_param_spec_string ("bus-name", "Bus name", "D-Bus name",
+                         NULL,
+                         G_PARAM_READWRITE | G_PARAM_CONSTRUCT_ONLY);
+
+  pspecs[PROP_BUS_PATH] =
+    g_param_spec_string ("bus-path", "Bus path", "D-Bus object path",
+                         NULL,
+                         G_PARAM_READWRITE | G_PARAM_CONSTRUCT_ONLY);
+
+  g_object_class_install_properties (object_class, LAST_PROP, pspecs);
+}
+
+static void
+phosh_search_provider_init (PhoshSearchProvider *self)
+{
+
 }

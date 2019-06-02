@@ -10,7 +10,7 @@
 
 #include <app-grid.h>
 
-#include "search/search-provider.h"
+#include "search/search.h"
 
 static void
 css_setup (void)

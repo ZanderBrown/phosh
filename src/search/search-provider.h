@@ -5,15 +5,16 @@
  */
 
 #include <gio/gio.h>
+#include <gio/gdesktopappinfo.h>
 
 #pragma once
 
 G_BEGIN_DECLS
 
-#define PHOSH_TYPE_SEARCH phosh_search_get_type()
-G_DECLARE_DERIVABLE_TYPE (PhoshSearch, phosh_search, PHOSH, SEARCH, GObject)
+#define PHOSH_TYPE_SEARCH_PROVIDER phosh_search_provider_get_type()
+G_DECLARE_DERIVABLE_TYPE (PhoshSearchProvider, phosh_search_provider, PHOSH, SEARCH_PROVIDER, GObject)
 
-struct _PhoshSearchClass
+struct _PhoshSearchProviderClass
 {
   GObjectClass parent_class;
 };
