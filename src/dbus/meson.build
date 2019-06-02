@@ -44,4 +44,4 @@ generated_dbus_sources += gnome.gdbus_codegen('phosh-screen-saver-dbus',
 generated_dbus_sources += gnome.gdbus_codegen('gnome-shell-search-provider',
                                               'org.gnome.Shell.SearchProvider2.xml',
                                               interface_prefix: 'org.gnome.Shell',
-                                              namespace: 'Phosh')
+                                              namespace: 'PhoshDBus')

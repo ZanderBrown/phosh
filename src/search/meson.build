@@ -1,4 +1,5 @@
 phosh_search_sources = [
+  'search/search.c',
   'search/search-provider.c',
   'search/search-provider.h',
   'search/search-result.c',
