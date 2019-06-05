@@ -19,5 +19,9 @@ struct _PhoshSearchProviderClass
   GObjectClass parent_class;
 };
 
+PhoshSearchProvider *phosh_search_provider_new (const char *desktop_app_id,
+                                                const char *bus_path,
+                                                const char *bus_name,
+                                                gboolean    autostart);
 
 G_END_DECLS
