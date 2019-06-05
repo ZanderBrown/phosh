@@ -22,6 +22,7 @@ struct _PhoshSearchProviderClass
 PhoshSearchProvider *phosh_search_provider_new (const char *desktop_app_id,
                                                 const char *bus_path,
                                                 const char *bus_name,
-                                                gboolean    autostart);
+                                                gboolean    autostart,
+                                                gboolean    default_disabled);
 
 G_END_DECLS
