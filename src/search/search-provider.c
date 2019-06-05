@@ -22,6 +22,7 @@ struct _PhoshSearchProviderPrivate {
   char                     *bus_name;
   char                     *bus_path;
   gboolean                  autostart;
+  gboolean                  default_disabled;
 };
 
 G_DEFINE_TYPE_WITH_PRIVATE (PhoshSearchProvider, phosh_search_provider, G_TYPE_OBJECT)
@@ -33,6 +34,7 @@ enum {
   PROP_BUS_NAME,
   PROP_BUS_PATH,
   PROP_AUTOSTART,
+  PROP_DEFAULT_DISABLED,
   LAST_PROP
 };
 static GParamSpec *pspecs[LAST_PROP] = { NULL, };
@@ -126,6 +128,9 @@ phosh_search_provider_set_property (GObject      *object,
         priv->proxy_flags |= G_DBUS_PROXY_FLAGS_DO_NOT_AUTO_START;
       }
       break;
+    case PROP_DEFAULT_DISABLED:
+      priv->default_disabled = g_value_get_boolean (value);
+      break;
     default:
       G_OBJECT_WARN_INVALID_PROPERTY_ID (object, property_id, pspec);
       break;
@@ -156,6 +161,9 @@ phosh_search_provider_get_property (GObject    *object,
       break;
     case PROP_AUTOSTART:
       g_value_set_boolean (value, priv->autostart);
+      break;
+    case PROP_DEFAULT_DISABLED:
+      g_value_set_boolean (value, priv->default_disabled);
       break;
     default:
       G_OBJECT_WARN_INVALID_PROPERTY_ID (object, property_id, pspec);
@@ -198,6 +206,11 @@ phosh_search_provider_class_init (PhoshSearchProviderClass *klass)
                           TRUE,
                           G_PARAM_READWRITE | G_PARAM_CONSTRUCT_ONLY);
 
+  pspecs[PROP_DEFAULT_DISABLED] =
+    g_param_spec_boolean ("default-disabled", "Default disabled", "The provider is disabled by default",
+                          FALSE,
+                          G_PARAM_READWRITE | G_PARAM_CONSTRUCT_ONLY);
+
   g_object_class_install_properties (object_class, LAST_PROP, pspecs);
 }
 
@@ -213,18 +226,21 @@ phosh_search_provider_init (PhoshSearchProvider *self)
   priv->proxy = NULL;
   priv->proxy_flags = G_DBUS_PROXY_FLAGS_DO_NOT_LOAD_PROPERTIES;
   priv->autostart = TRUE;
+  priv->default_disabled = FALSE;
 }
 
 PhoshSearchProvider *
 phosh_search_provider_new (const char *desktop_app_id,
                            const char *bus_path,
                            const char *bus_name,
-                           gboolean    autostart)
+                           gboolean    autostart,
+                           gboolean    default_disabled)
 {
   return g_object_new (PHOSH_TYPE_SEARCH_PROVIDER,
                        "app-info", g_desktop_app_info_new (desktop_app_id),
                        "bus-path", bus_path,
                        "bus-name", bus_name,
                        "autostart", autostart,
+                       "default-disabled", default_disabled,
                        NULL);
 }

@@ -25,9 +25,20 @@ struct _PhoshSearchPrivate {
 G_DEFINE_TYPE_WITH_PRIVATE (PhoshSearch, phosh_search, G_TYPE_OBJECT)
 
 static void
+phosh_search_finalize (GObject *object)
+{
+  PhoshSearch *self = PHOSH_SEARCH (object);
+  PhoshSearchPrivate *priv = phosh_search_get_instance_private (self);
+
+  g_clear_object (&priv->settings);
+}
+
+static void
 phosh_search_class_init (PhoshSearchClass *klass)
 {
+  GObjectClass *object_class = G_OBJECT_CLASS (klass);
 
+  object_class->finalize = phosh_search_finalize;
 }
 
 // Don't rely on settings or key, they are null when called due to app change
@@ -36,9 +47,17 @@ reload_providers (GSettings   *settings,
                   char        *key,
                   PhoshSearch *self)
 {
+  PhoshSearchPrivate *priv = phosh_search_get_instance_private (self);
   const char *const *data_dirs = g_get_system_data_dirs ();
   const char *data_dir = NULL;
+  g_autoptr (GHashTable) provider_set = NULL;
   int i = 0;
+
+  provider_set = g_hash_table_new_full (g_str_hash,
+                                        g_str_equal,
+                                        g_free,
+                                        NULL);
+
 
   while ((data_dir = data_dirs[i])) {
     g_autofree char *dir = NULL;
@@ -50,8 +69,6 @@ reload_providers (GSettings   *settings,
 
     dir = g_build_filename (data_dir, "gnome-shell", "search-providers", NULL);
     list = g_dir_open (dir, 0, &error);
-
-    g_message ("look in %s", dir);
 
     if (error) {
       if (!g_error_matches (error, G_FILE_ERROR, G_FILE_ERROR_NOENT)) {
@@ -67,9 +84,12 @@ reload_providers (GSettings   *settings,
       g_autofree char *bus_name = NULL;
       g_autofree char *desktop_id = NULL;
       g_autoptr (GKeyFile) data = NULL;
+      g_autoptr (PhoshSearchProvider) provider_object = NULL;
       int version = 0;
       gboolean autostart = TRUE;
       gboolean autostart_tmp = FALSE;
+      gboolean default_disabled = FALSE;
+      gboolean default_disabled_tmp = FALSE;
 
       provider = g_build_filename (dir, name, NULL);
       data = g_key_file_new ();
@@ -112,7 +132,7 @@ reload_providers (GSettings   *settings,
 
       if (!desktop_id) {
         g_warning ("Provider %s doesn't specify a desktop id", provider);
-        return;
+        continue;
       }
 
 
@@ -126,7 +146,7 @@ reload_providers (GSettings   *settings,
 
       if (!bus_name) {
         g_warning ("Provider %s doesn't specify a bus name", provider);
-        return;
+        continue;
       }
 
 
@@ -140,7 +160,12 @@ reload_providers (GSettings   *settings,
 
       if (!bus_path) {
         g_warning ("Provider %s doesn't specify a bus path", provider);
-        return;
+        continue;
+      }
+
+      if (g_hash_table_contains (provider_set, bus_path)) {
+        g_debug ("We already have a provider for %s, ignoring %s", bus_path, provider);
+        continue;
       }
 
 
@@ -152,12 +177,24 @@ reload_providers (GSettings   *settings,
         autostart = autostart_tmp;
       }
 
-      g_message ("We got one! %s", provider);
 
-      phosh_search_provider_new (desktop_id,
-                                 bus_path,
-                                 bus_name,
-                                 autostart);
+      default_disabled_tmp = g_key_file_get_boolean (data, GROUP_NAME, "DefaultDisabled", &error);
+
+      if (G_LIKELY (error)) {
+        g_clear_error (&error);
+      } else {
+        default_disabled = default_disabled_tmp;
+      }
+
+
+      provider_object = phosh_search_provider_new (desktop_id,
+                                                   bus_path,
+                                                   bus_name,
+                                                   autostart,
+                                                   default_disabled);
+      g_object_ref (provider_object);
+
+      g_hash_table_add (provider_set, g_strdup (bus_path));
     }
   }
 }
