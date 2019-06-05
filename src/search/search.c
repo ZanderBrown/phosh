@@ -63,8 +63,13 @@ reload_providers (GSettings   *settings,
 
     while ((name = g_dir_read_name (list))) {
       g_autofree char *provider = NULL;
+      g_autofree char *bus_path = NULL;
+      g_autofree char *bus_name = NULL;
+      g_autofree char *desktop_id = NULL;
       g_autoptr (GKeyFile) data = NULL;
       int version = 0;
+      gboolean autostart = TRUE;
+      gboolean autostart_tmp = FALSE;
 
       provider = g_build_filename (dir, name, NULL);
       data = g_key_file_new ();
@@ -82,6 +87,7 @@ reload_providers (GSettings   *settings,
         continue;
       }
 
+
       version = g_key_file_get_integer (data, GROUP_NAME, "Version", &error);
 
       if (error) {
@@ -90,21 +96,70 @@ reload_providers (GSettings   *settings,
         continue;
       }
 
-      if (version != 2) {
-        g_warning ("Provider %s implements version %i but we only support version 2", provider, version);
+      if (version < 2) {
+        g_warning ("Provider %s implements version %i but we only support version 2 and up", provider, version);
         continue;
+      }
+
+
+      desktop_id = g_key_file_get_string (data, GROUP_NAME, "DesktopId", &error);
+
+      if (error) {
+        g_warning ("Failed to fetch provider desktop id %s: %s", provider, error->message);
+        g_clear_error (&error);
+        continue;
+      }
+
+      if (!desktop_id) {
+        g_warning ("Provider %s doesn't specify a desktop id", provider);
+        return;
+      }
+
+
+      bus_name = g_key_file_get_string (data, GROUP_NAME, "BusName", &error);
+
+      if (error) {
+        g_warning ("Failed to fetch provider bus name %s: %s", provider, error->message);
+        g_clear_error (&error);
+        continue;
+      }
+
+      if (!bus_name) {
+        g_warning ("Provider %s doesn't specify a bus name", provider);
+        return;
+      }
+
+
+      bus_path = g_key_file_get_string (data, GROUP_NAME, "ObjectPath", &error);
+
+      if (error) {
+        g_warning ("Failed to fetch provider bus path %s: %s", provider, error->message);
+        g_clear_error (&error);
+        continue;
+      }
+
+      if (!bus_path) {
+        g_warning ("Provider %s doesn't specify a bus path", provider);
+        return;
+      }
+
+
+      autostart_tmp = g_key_file_get_boolean (data, GROUP_NAME, "AutoStart", &error);
+
+      if (G_LIKELY (error)) {
+        g_clear_error (&error);
+      } else {
+        autostart = autostart_tmp;
       }
 
       g_message ("We got one! %s", provider);
 
+      phosh_search_provider_new (desktop_id,
+                                 bus_path,
+                                 bus_name,
+                                 autostart);
     }
   }
-
-  g_object_new (PHOSH_TYPE_SEARCH_PROVIDER,
-                "app-info", g_desktop_app_info_new ("org.gnome.Nautilus.desktop"),
-                "bus-path", "/org/gnome/Nautilus/SearchProvider",
-                "bus-name", "org.gnome.Nautilus",
-                NULL);
 }
 
 static void
