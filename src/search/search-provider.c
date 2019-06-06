@@ -30,7 +30,6 @@ G_DEFINE_TYPE_WITH_PRIVATE (PhoshSearchProvider, phosh_search_provider, G_TYPE_O
 enum {
   PROP_0,
   PROP_APP_INFO,
-  PROP_APP_ID,
   PROP_BUS_NAME,
   PROP_BUS_PATH,
   PROP_AUTOSTART,
@@ -150,9 +149,6 @@ phosh_search_provider_get_property (GObject    *object,
     case PROP_APP_INFO:
       g_value_set_object (value, priv->info);
       break;
-    case PROP_APP_ID:
-      g_value_set_string (value, g_app_info_get_id (priv->info));
-      break;
     case PROP_BUS_NAME:
       g_value_set_string (value, priv->bus_name);
       break;
@@ -185,11 +181,6 @@ phosh_search_provider_class_init (PhoshSearchProviderClass *klass)
     g_param_spec_object ("app-info", "App info", "Application info",
                          G_TYPE_APP_INFO,
                          G_PARAM_READWRITE | G_PARAM_CONSTRUCT_ONLY);
-
-  pspecs[PROP_APP_ID] =
-    g_param_spec_string ("app-id", "App id", "Application id",
-                         NULL,
-                         G_PARAM_READABLE);
 
   pspecs[PROP_BUS_NAME] =
     g_param_spec_string ("bus-name", "Bus name", "D-Bus name",
