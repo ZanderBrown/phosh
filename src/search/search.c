@@ -20,6 +20,8 @@
 typedef struct _PhoshSearchPrivate PhoshSearchPrivate;
 struct _PhoshSearchPrivate {
   GSettings *settings;
+  // element-type: Phosh.SearchProvider
+  GList *providers;
 };
 
 G_DEFINE_TYPE_WITH_PRIVATE (PhoshSearch, phosh_search, G_TYPE_OBJECT)
@@ -31,6 +33,7 @@ phosh_search_finalize (GObject *object)
   PhoshSearchPrivate *priv = phosh_search_get_instance_private (self);
 
   g_clear_object (&priv->settings);
+  g_list_free_full (priv->providers, g_object_unref);
 }
 
 static void
@@ -120,8 +123,7 @@ reload_providers (GSettings   *settings,
   int i = 0;
 
   if (g_settings_get_boolean (priv->settings, "disable-external")) {
-    // TODO: Clear all
-    return;
+    g_list_free_full (priv->providers, g_object_unref);
   }
 
   enabled = g_settings_get_strv (priv->settings, "enabled");
@@ -287,15 +289,8 @@ reload_providers (GSettings   *settings,
 
   providers = g_list_sort_with_data (providers, sort_providers, sort_order);
 
-  providers = g_list_copy_deep (providers, (GCopyFunc) g_object_ref, NULL);
-
-  for (GList *l = providers; l; l = l->next) {
-    GAppInfo *info = NULL;
-
-    g_object_get (l->data, "app-info", &info, NULL);
-
-    g_print ("%25s %s\n", g_app_info_get_name (info), g_app_info_get_id (info));
-  }
+  g_list_free_full (priv->providers, g_object_unref);
+  priv->providers = g_list_copy_deep (providers, (GCopyFunc) g_object_ref, NULL);
 }
 
 static void

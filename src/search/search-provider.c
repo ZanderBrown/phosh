@@ -1,7 +1,7 @@
 /*
  * Copyright © 2019 Zander Brown <zbrown@gnome.org>
  *
- * Inspired by search.js / remoteSearch.js:
+ * Based on search.js / remoteSearch.js:
  * https://gitlab.gnome.org/GNOME/gnome-shell/blob/2d2824b947754abf0ddadd9c1ba9b9f16b0745d3/js/ui/search.js
  * https://gitlab.gnome.org/GNOME/gnome-shell/blob/0a7e717e0e125248bace65e170a95ae12e3cdf38/js/ui/remoteSearch.js
  *
@@ -12,6 +12,80 @@
 
 #include "search-provider.h"
 #include "dbus/gnome-shell-search-provider.h"
+
+struct _PhoshSearchProviderResultMeta {
+  char  *id;
+  char  *name;
+  char  *desc;
+  GIcon *icon;
+};
+
+static gpointer
+phosh_search_provider_result_meta_copy (gpointer source)
+{
+  PhoshSearchProviderResultMeta *copy;
+  PhoshSearchProviderResultMeta *self = source;
+
+  g_return_val_if_fail (self != NULL, NULL);
+
+  copy = g_new (PhoshSearchProviderResultMeta, 1);
+  copy->id = g_strdup (self->id);
+  copy->name = g_strdup (self->name);
+  copy->desc = g_strdup (self->desc);
+  copy->icon = g_object_ref (self->icon);
+
+  return copy;
+}
+
+void
+phosh_search_provider_result_meta_free (gpointer source)
+{
+  PhoshSearchProviderResultMeta *self = source;
+
+  g_clear_pointer (&self->id, g_free);
+  g_clear_pointer (&self->name, g_free);
+  g_clear_pointer (&self->desc, g_free);
+  g_clear_object (&self->icon);
+
+  g_free (self);
+}
+
+G_DEFINE_BOXED_TYPE (PhoshSearchProviderResultMeta,
+                     phosh_search_provider_result_meta,
+                     phosh_search_provider_result_meta_copy,
+                     phosh_search_provider_result_meta_free)
+
+const char *
+phosh_search_provider_result_meta_get_id (PhoshSearchProviderResultMeta *self)
+{
+  g_return_val_if_fail (self != NULL, NULL);
+
+  return self->id;
+}
+
+const char *
+phosh_search_provider_result_meta_get_name (PhoshSearchProviderResultMeta *self)
+{
+  g_return_val_if_fail (self != NULL, NULL);
+
+  return self->name;
+}
+
+const char *
+phosh_search_provider_result_meta_get_description (PhoshSearchProviderResultMeta *self)
+{
+  g_return_val_if_fail (self != NULL, NULL);
+
+  return self->desc;
+}
+
+GIcon *
+phosh_search_provider_result_meta_get_icon (PhoshSearchProviderResultMeta *self)
+{
+  g_return_val_if_fail (self != NULL, NULL);
+
+  return self->icon;
+}
 
 typedef struct _PhoshSearchProviderPrivate PhoshSearchProviderPrivate;
 struct _PhoshSearchProviderPrivate {
@@ -38,6 +112,12 @@ enum {
 };
 static GParamSpec *pspecs[LAST_PROP] = { NULL, };
 
+enum {
+  READY,
+  N_SIGNALS
+};
+static guint signals[N_SIGNALS] = { 0 };
+
 static void
 got_proxy (GObject      *source_object,
            GAsyncResult *res,
@@ -60,6 +140,8 @@ got_proxy (GObject      *source_object,
   g_debug ("Got proxy for %s%s",
            priv->bus_name,
            priv->bus_path);
+
+  g_signal_emit (self, signals[READY], 0);
 }
 
 static void
@@ -203,6 +285,12 @@ phosh_search_provider_class_init (PhoshSearchProviderClass *klass)
                           G_PARAM_READWRITE | G_PARAM_CONSTRUCT_ONLY);
 
   g_object_class_install_properties (object_class, LAST_PROP, pspecs);
+
+  signals[READY] = g_signal_new ("ready",
+                                 G_TYPE_FROM_CLASS (klass),
+                                 G_SIGNAL_RUN_LAST,
+                                 0, NULL, NULL, NULL,
+                                 G_TYPE_NONE, 0);
 }
 
 static void
@@ -234,4 +322,178 @@ phosh_search_provider_new (const char *desktop_app_id,
                        "autostart", autostart,
                        "default-disabled", default_disabled,
                        NULL);
+}
+
+static void
+result_activated (GObject      *source,
+                  GAsyncResult *res,
+                  gpointer      data)
+{
+  g_autoptr (GError) error = NULL;
+
+  phosh_dbus_search_provider2_call_activate_result_finish (PHOSH_DBUS_SEARCH_PROVIDER2 (source),
+                                                           res,
+                                                           &error);
+
+  if (error) {
+    g_warning ("Failed to activate result: %s", error->message);
+  }
+}
+
+void
+phosh_search_provider_activate_result (PhoshSearchProvider *self,
+                                       const char          *result,
+                                       const char *const   *terms)
+{
+  PhoshSearchProviderPrivate *priv = phosh_search_provider_get_instance_private (self);
+
+  phosh_dbus_search_provider2_call_activate_result (PHOSH_DBUS_SEARCH_PROVIDER2 (priv->proxy),
+                                                    result,
+                                                    terms,
+                                                    GDK_CURRENT_TIME,
+                                                    priv->cancellable,
+                                                    result_activated,
+                                                    NULL);
+}
+
+static GIcon *
+get_result_icon (PhoshSearchProvider *self,
+                 GVariantDict        *result_meta)
+{
+  PhoshSearchProviderPrivate *priv = phosh_search_provider_get_instance_private (self);
+  g_autoptr (GError) error = NULL;
+  g_autoptr (GVariant) variant = NULL;
+  g_autofree char *icon_data = NULL;
+  GIcon *icon = NULL;
+  int width = 0;
+  int height = 0;
+  int row_stride = 0;
+  int has_alpha = 0;
+  int sample_size = 0;
+  int channels = 0;
+
+  if (g_variant_dict_lookup (result_meta, "icon", "v", &variant)) {
+    icon = g_icon_deserialize (variant);
+  } else if (g_variant_dict_lookup (result_meta, "gicon", "s", &icon_data)) {
+    icon = g_icon_new_for_string (icon_data, &error);
+
+    if (error) {
+      g_warning ("%s provided a bad icon: %s", priv->bus_name, error->message);
+    }
+  } else if (g_variant_dict_lookup (result_meta, "icon-data", "iiibiiay", &width, &height, &row_stride, &has_alpha, &sample_size, &channels, &icon_data)) {
+    icon = G_ICON (gdk_pixbuf_new_from_data ((guchar *) icon_data,
+                                             GDK_COLORSPACE_RGB,
+                                             has_alpha,
+                                             sample_size,
+                                             width,
+                                             height,
+                                             row_stride,
+                                             (GdkPixbufDestroyNotify) g_free,
+                                             NULL));
+  }
+
+  return icon;
+}
+
+struct GetMetaData {
+  PhoshSearchProvider *self;
+  GTask *task;
+};
+
+static void
+got_result_meta (GObject      *source,
+                 GAsyncResult *res,
+                 gpointer      user_data)
+{
+  g_autoptr (GError) error = NULL;
+  g_autoptr (GVariant) metas = NULL;
+  g_autoptr (GPtrArray) results = NULL;
+  struct GetMetaData *data = user_data;
+  GVariant *val = NULL;
+  GVariantIter iter;
+
+  phosh_dbus_search_provider2_call_get_result_metas_finish (PHOSH_DBUS_SEARCH_PROVIDER2 (source),
+                                                            &metas,
+                                                            res,
+                                                            &error);
+
+  results = g_ptr_array_new_full (100, phosh_search_provider_result_meta_free);
+
+  g_variant_iter_init (&iter, metas);
+  while (g_variant_iter_loop (&iter, "@a{sv}", &val)) {
+    g_auto (GVariantDict) dict;
+    g_autofree char *id = NULL;
+    g_autofree char *name = NULL;
+    g_autofree char *desc = NULL;
+    GIcon *icon = NULL;
+    PhoshSearchProviderResultMeta *meta;
+
+    g_variant_dict_init (&dict, val);
+
+    if (!g_variant_dict_lookup (&dict, "id", "s", &id)) {
+      g_warning ("Result is missing a result id");
+      continue;
+    }
+
+    if (!g_variant_dict_lookup (&dict, "name", "s", &name)) {
+      g_warning ("Result %s is missing a name!", id);
+      continue;
+    }
+
+    g_variant_dict_lookup (&dict, "description", "s", &desc);
+
+    icon = get_result_icon (data->self, &dict);
+
+    meta = g_new (PhoshSearchProviderResultMeta, 1);
+    meta->id = g_strdup (id);
+    meta->name = g_strdup (name);
+    meta->desc = g_strdup (desc);
+    meta->icon = icon;
+
+    g_ptr_array_add (results, meta);
+  }
+
+  if (error) {
+    g_warning ("Failed get result meta: %s", error->message);
+  }
+
+  g_task_return_pointer (G_TASK (data->task),
+                         g_ptr_array_ref (results),
+                         (GDestroyNotify) g_ptr_array_unref);
+
+  g_object_unref (data->self);
+  g_free (data);
+}
+
+void
+phosh_search_provider_get_result_meta (PhoshSearchProvider *self,
+                                       const char *const   *results,
+                                       GAsyncReadyCallback  callback,
+                                       gpointer             callback_data)
+{
+  PhoshSearchProviderPrivate *priv = phosh_search_provider_get_instance_private (self);
+  struct GetMetaData *data;
+  GTask *task;
+
+  task = g_task_new (self, priv->cancellable, callback, callback_data);
+
+  data = g_new (struct GetMetaData, 1);
+  data->self = g_object_ref (self);
+  data->task = task;
+
+  phosh_dbus_search_provider2_call_get_result_metas (PHOSH_DBUS_SEARCH_PROVIDER2 (priv->proxy),
+                                                     results,
+                                                     priv->cancellable,
+                                                     got_result_meta,
+                                                     data);
+}
+
+GPtrArray *
+phosh_search_provider_get_result_meta_finish (PhoshSearchProvider  *self,
+                                              GAsyncResult         *res,
+                                              GError              **error)
+{
+  g_return_val_if_fail (g_task_is_valid (res, self), NULL);
+
+  return g_task_propagate_pointer (G_TASK (res), error);
 }
