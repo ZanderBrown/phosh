@@ -40,13 +40,15 @@ PhoshSearchProvider *phosh_search_provider_new                    (const char   
                                                                    const char          *bus_name,
                                                                    gboolean             autostart,
                                                                    gboolean             default_disabled);
+GPtrArray           *phosh_search_provider_limit_results          (GStrv                results,
+                                                                   int                  max);
 void                 phosh_search_provider_activate_result        (PhoshSearchProvider *self,
                                                                    const char          *result,
                                                                    const char *const   *terms);
 void                 phosh_search_provider_launch                 (PhoshSearchProvider *self,
                                                                    const char *const   *terms);
 void                 phosh_search_provider_get_result_meta        (PhoshSearchProvider *self,
-                                                                   const char *const   *results,
+                                                                   GStrv                results,
                                                                    GAsyncReadyCallback  callback,
                                                                    gpointer             callback_data);
 GPtrArray           *phosh_search_provider_get_result_meta_finish (PhoshSearchProvider  *self,

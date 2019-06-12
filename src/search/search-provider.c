@@ -126,7 +126,7 @@ got_proxy (GObject      *source_object,
            GAsyncResult *res,
            gpointer      user_data)
 {
-  PhoshSearchProvider *self = PHOSH_SEARCH_PROVIDER (user_data);
+  g_autoptr (PhoshSearchProvider) self = PHOSH_SEARCH_PROVIDER (user_data);
   PhoshSearchProviderPrivate *priv = phosh_search_provider_get_instance_private (self);
   g_autoptr (GError) error = NULL;
 
@@ -161,7 +161,7 @@ phosh_search_provider_constructed (GObject *object)
                                                  priv->bus_path,
                                                  priv->cancellable,
                                                  got_proxy,
-                                                 self);
+                                                 g_object_ref (self));
 }
 
 static void
@@ -325,6 +325,46 @@ phosh_search_provider_new (const char *desktop_app_id,
                        "autostart", autostart,
                        "default-disabled", default_disabled,
                        NULL);
+}
+
+GPtrArray *
+phosh_search_provider_limit_results (GStrv results,
+                                     int   max)
+{
+  g_autoptr (GPtrArray) normal = NULL;
+  g_autoptr (GPtrArray) special = NULL;
+  GPtrArray *array;
+  int i = 0;
+
+  g_return_val_if_fail (results != NULL, NULL);
+
+  normal = g_ptr_array_new_full (max * 1.5, g_free);
+  special = g_ptr_array_new_full (max * 1.5, g_free);
+  array = g_ptr_array_new_full (max * 1.5, g_free);
+
+  while (results[i]) {
+    if (G_UNLIKELY (g_str_has_prefix (results[i], "special:"))) {
+      g_ptr_array_add (special, g_strdup (results[i]));
+    } else {
+      g_ptr_array_add (normal, g_strdup (results[i]));
+    }
+
+    if (special->len == max && normal->len == max) {
+      break;
+    }
+
+    i++;
+  }
+
+  for (i = 0; i < max &&i < normal->len; i++) {
+    g_ptr_array_add (array, g_ptr_array_steal_index (normal, i));
+  }
+
+  for (i = 0; i < max &&i < special->len; i++) {
+    g_ptr_array_add (array, g_ptr_array_steal_index (special, i));
+  }
+
+  return array;
 }
 
 static void
@@ -505,7 +545,7 @@ got_result_meta (GObject      *source,
 
 void
 phosh_search_provider_get_result_meta (PhoshSearchProvider *self,
-                                       const char *const   *results,
+                                       GStrv                results,
                                        GAsyncReadyCallback  callback,
                                        gpointer             callback_data)
 {
@@ -520,7 +560,7 @@ phosh_search_provider_get_result_meta (PhoshSearchProvider *self,
   data->task = task;
 
   phosh_dbus_search_provider2_call_get_result_metas (PHOSH_DBUS_SEARCH_PROVIDER2 (priv->proxy),
-                                                     results,
+                                                     (const gchar * const*) results,
                                                      priv->cancellable,
                                                      got_result_meta,
                                                      data);
