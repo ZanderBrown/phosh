@@ -11,6 +11,7 @@
 #include <app-grid.h>
 
 #include "search/search.h"
+#include "search/search-provider.h"
 
 static void
 css_setup (void)
@@ -33,11 +34,80 @@ css_setup (void)
   g_object_unref (file);
 }
 
+static void
+got_metas (GObject      *source,
+           GAsyncResult *res,
+           gpointer      data)
+{
+  g_autoptr (GError) error = NULL;
+  g_autoptr (GPtrArray) metas = NULL;
+
+  metas = phosh_search_provider_get_result_meta_finish (PHOSH_SEARCH_PROVIDER (source), res, &error);
+
+  for (int i = 0; i < metas->len; i++) {
+    PhoshSearchProviderResultMeta *result = g_ptr_array_index (metas, i);
+
+    g_message ("%s: %s",
+               phosh_search_provider_result_meta_get_id (result),
+               phosh_search_provider_result_meta_get_name (result));
+  }
+
+  if (error) {
+    g_warning ("%s", error->message);
+  }
+}
+
+static void
+got_initial (GObject      *source,
+             GAsyncResult *res,
+             gpointer      data)
+{
+  g_autoptr (GError) error = NULL;
+  g_autoptr (GPtrArray) filtered = NULL;
+  GStrv results = NULL;
+  GStrv results_filtered = NULL;
+
+  results = phosh_search_provider_get_initial_finish (PHOSH_SEARCH_PROVIDER (source), res, &error);
+
+  if (error) {
+    g_warning ("Failed to search provider: %s", error->message);
+    return;
+  }
+
+  filtered = phosh_search_provider_limit_results (results, 5);
+
+  if (!filtered) {
+    g_debug ("No results");
+    return;
+  }
+
+  results_filtered = g_new (char *, filtered->len + 1);
+
+  for (int i = 0; i < filtered->len; i++) {
+    results_filtered[i] = g_ptr_array_index (filtered, i);
+  }
+  results_filtered[filtered->len] = NULL;
+
+  phosh_search_provider_get_result_meta (PHOSH_SEARCH_PROVIDER (source), results_filtered, got_metas, NULL);
+}
+
+static void
+ready (PhoshSearchProvider *self)
+{
+  const char *terms[] = {
+    "test",
+    NULL
+  };
+
+  phosh_search_provider_get_initial (self, terms, got_initial, NULL);
+}
+
 int
 main (int argc, char *argv[])
 {
   GtkWidget *win;
   GtkWidget *widget;
+  g_autoptr (PhoshSearchProvider) provider = NULL;
 
   gtk_init (&argc, &argv);
 
@@ -58,8 +128,14 @@ main (int argc, char *argv[])
 
   gtk_container_add (GTK_CONTAINER (win), widget);
 
-  // find_them ();
   g_object_new (PHOSH_TYPE_SEARCH, NULL);
+
+  provider = phosh_search_provider_new ("org.gnome.Nautilus.desktop",
+                                        "/org/gnome/Nautilus/SearchProvider",
+                                        "org.gnome.Nautilus",
+                                        TRUE,
+                                        FALSE);
+  g_signal_connect (provider, "ready", G_CALLBACK (ready), NULL);
 
   gtk_main ();
 
