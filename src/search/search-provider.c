@@ -17,6 +17,7 @@ struct _PhoshSearchProviderResultMeta {
   char  *id;
   char  *name;
   char  *desc;
+  char  *clipboard_text;
   GIcon *icon;
 };
 
@@ -33,6 +34,7 @@ phosh_search_provider_result_meta_copy (gpointer source)
   copy->name = g_strdup (self->name);
   copy->desc = g_strdup (self->desc);
   copy->icon = g_object_ref (self->icon);
+  copy->clipboard_text = g_strdup (self->clipboard_text);
 
   return copy;
 }
@@ -46,6 +48,7 @@ phosh_search_provider_result_meta_free (gpointer source)
   g_clear_pointer (&self->name, g_free);
   g_clear_pointer (&self->desc, g_free);
   g_clear_object (&self->icon);
+  g_clear_pointer (&self->clipboard_text, g_free);
 
   g_free (self);
 }
@@ -356,6 +359,36 @@ phosh_search_provider_activate_result (PhoshSearchProvider *self,
                                                     NULL);
 }
 
+static void
+search_launched (GObject      *source,
+                 GAsyncResult *res,
+                 gpointer      data)
+{
+  g_autoptr (GError) error = NULL;
+
+  phosh_dbus_search_provider2_call_launch_search_finish (PHOSH_DBUS_SEARCH_PROVIDER2 (source),
+                                                         res,
+                                                         &error);
+
+  if (error) {
+    g_warning ("Failed to launch search: %s", error->message);
+  }
+}
+
+void
+phosh_search_provider_launch (PhoshSearchProvider *self,
+                              const char *const   *terms)
+{
+  PhoshSearchProviderPrivate *priv = phosh_search_provider_get_instance_private (self);
+
+  phosh_dbus_search_provider2_call_launch_search (PHOSH_DBUS_SEARCH_PROVIDER2 (priv->proxy),
+                                                  terms,
+                                                  GDK_CURRENT_TIME,
+                                                  priv->cancellable,
+                                                  search_launched,
+                                                  NULL);
+}
+
 static GIcon *
 get_result_icon (PhoshSearchProvider *self,
                  GVariantDict        *result_meta)
@@ -425,6 +458,7 @@ got_result_meta (GObject      *source,
     g_autofree char *id = NULL;
     g_autofree char *name = NULL;
     g_autofree char *desc = NULL;
+    g_autofree char *clipboard = NULL;
     GIcon *icon = NULL;
     PhoshSearchProviderResultMeta *meta;
 
@@ -442,6 +476,9 @@ got_result_meta (GObject      *source,
 
     g_variant_dict_lookup (&dict, "description", "s", &desc);
 
+    // Isn't consistent naming great?
+    g_variant_dict_lookup (&dict, "clipboardText", "s", &clipboard);
+
     icon = get_result_icon (data->self, &dict);
 
     meta = g_new (PhoshSearchProviderResultMeta, 1);
@@ -449,6 +486,7 @@ got_result_meta (GObject      *source,
     meta->name = g_strdup (name);
     meta->desc = g_strdup (desc);
     meta->icon = icon;
+    meta->clipboard_text = g_strdup (clipboard);
 
     g_ptr_array_add (results, meta);
   }
@@ -492,6 +530,111 @@ GPtrArray *
 phosh_search_provider_get_result_meta_finish (PhoshSearchProvider  *self,
                                               GAsyncResult         *res,
                                               GError              **error)
+{
+  g_return_val_if_fail (g_task_is_valid (res, self), NULL);
+
+  return g_task_propagate_pointer (G_TASK (res), error);
+}
+
+struct GetResultsData {
+  gboolean inital;
+  GTask *task;
+};
+
+static void
+got_results (GObject      *source,
+             GAsyncResult *res,
+             gpointer      user_data)
+{
+  g_autoptr (GError) error = NULL;
+  struct GetResultsData *data = user_data;
+  GStrv results = NULL;
+
+  if (data->inital) {
+    phosh_dbus_search_provider2_call_get_initial_result_set_finish (PHOSH_DBUS_SEARCH_PROVIDER2 (source),
+                                                                    &results,
+                                                                    res,
+                                                                    &error);
+  } else {
+    phosh_dbus_search_provider2_call_get_subsearch_result_set_finish (PHOSH_DBUS_SEARCH_PROVIDER2 (source),
+                                                                      &results,
+                                                                      res,
+                                                                      &error);
+  }
+
+  if (error) {
+    g_warning ("Search failed: %s", error->message);
+  }
+
+  g_task_return_pointer (G_TASK (data->task),
+                         results,
+                         (GDestroyNotify) g_strfreev);
+
+  g_free (data);
+}
+
+void
+phosh_search_provider_get_initial (PhoshSearchProvider *self,
+                                   const char *const   *terms,
+                                   GAsyncReadyCallback  callback,
+                                   gpointer             callback_data)
+{
+  PhoshSearchProviderPrivate *priv = phosh_search_provider_get_instance_private (self);
+  struct GetResultsData *data;
+  GTask *task;
+
+  task = g_task_new (self, priv->cancellable, callback, callback_data);
+
+  data = g_new (struct GetResultsData, 1);
+  data->inital = TRUE;
+  data->task = task;
+
+  phosh_dbus_search_provider2_call_get_initial_result_set (PHOSH_DBUS_SEARCH_PROVIDER2 (priv->proxy),
+                                                           terms,
+                                                           priv->cancellable,
+                                                           got_results,
+                                                           data);
+}
+
+GStrv
+phosh_search_provider_get_initial_finish (PhoshSearchProvider  *self,
+                                          GAsyncResult         *res,
+                                          GError              **error)
+{
+  g_return_val_if_fail (g_task_is_valid (res, self), NULL);
+
+  return g_task_propagate_pointer (G_TASK (res), error);
+}
+
+void
+phosh_search_provider_get_subsearch (PhoshSearchProvider *self,
+                                     const char *const   *results,
+                                     const char *const   *terms,
+                                     GAsyncReadyCallback  callback,
+                                     gpointer             callback_data)
+{
+  PhoshSearchProviderPrivate *priv = phosh_search_provider_get_instance_private (self);
+  struct GetResultsData *data;
+  GTask *task;
+
+  task = g_task_new (self, priv->cancellable, callback, callback_data);
+
+  data = g_new (struct GetResultsData, 1);
+  data->inital = FALSE;
+  data->task = task;
+
+  phosh_dbus_search_provider2_call_get_subsearch_result_set (PHOSH_DBUS_SEARCH_PROVIDER2 (priv->proxy),
+                                                             results,
+                                                             terms,
+                                                             priv->cancellable,
+                                                             got_results,
+                                                             data);
+}
+
+GStrv
+phosh_search_provider_get_subsearch_finish (PhoshSearchProvider  *self,
+                                            GAsyncResult         *res,
+                                            GError              **error)
 {
   g_return_val_if_fail (g_task_is_valid (res, self), NULL);
 
