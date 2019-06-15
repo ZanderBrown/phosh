@@ -57,49 +57,15 @@ got_metas (GObject      *source,
   }
 }
 
-static void
-got_initial (GObject      *source,
-             GAsyncResult *res,
-             gpointer      data)
+static gboolean
+ready (gpointer data)
 {
-  g_autoptr (GError) error = NULL;
-  g_autoptr (GPtrArray) filtered = NULL;
-  GStrv results = NULL;
-  GStrv results_filtered = NULL;
+  PhoshSearch *search = data;
+  char *terms[] = {"test", "me", NULL };
 
-  results = phosh_search_provider_get_initial_finish (PHOSH_SEARCH_PROVIDER (source), res, &error);
+  phosh_search_set_terms (search, terms);
 
-  if (error) {
-    g_warning ("Failed to search provider: %s", error->message);
-    return;
-  }
-
-  filtered = phosh_search_provider_limit_results (results, 5);
-
-  if (!filtered) {
-    g_debug ("No results");
-    return;
-  }
-
-  results_filtered = g_new (char *, filtered->len + 1);
-
-  for (int i = 0; i < filtered->len; i++) {
-    results_filtered[i] = g_ptr_array_index (filtered, i);
-  }
-  results_filtered[filtered->len] = NULL;
-
-  phosh_search_provider_get_result_meta (PHOSH_SEARCH_PROVIDER (source), results_filtered, got_metas, NULL);
-}
-
-static void
-ready (PhoshSearchProvider *self)
-{
-  const char *terms[] = {
-    "test",
-    NULL
-  };
-
-  phosh_search_provider_get_initial (self, terms, got_initial, NULL);
+  return G_SOURCE_REMOVE;
 }
 
 int
@@ -107,7 +73,7 @@ main (int argc, char *argv[])
 {
   GtkWidget *win;
   GtkWidget *widget;
-  g_autoptr (PhoshSearchProvider) provider = NULL;
+  g_autoptr (PhoshSearch) search = NULL;
 
   gtk_init (&argc, &argv);
 
@@ -119,6 +85,7 @@ main (int argc, char *argv[])
 
   win = gtk_window_new (GTK_WINDOW_TOPLEVEL);
   g_signal_connect (win, "delete_event", G_CALLBACK (gtk_main_quit), NULL);
+  gtk_window_set_default_size (GTK_WINDOW (win), 360, 720);
 
   gtk_widget_show (win);
 
@@ -128,14 +95,9 @@ main (int argc, char *argv[])
 
   gtk_container_add (GTK_CONTAINER (win), widget);
 
-  g_object_new (PHOSH_TYPE_SEARCH, NULL);
+  search = g_object_new (PHOSH_TYPE_SEARCH, NULL);
 
-  provider = phosh_search_provider_new ("org.gnome.Nautilus.desktop",
-                                        "/org/gnome/Nautilus/SearchProvider",
-                                        "org.gnome.Nautilus",
-                                        TRUE,
-                                        FALSE);
-  g_signal_connect (provider, "ready", G_CALLBACK (ready), NULL);
+  g_timeout_add (2500, ready, search);
 
   gtk_main ();
 

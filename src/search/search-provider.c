@@ -82,6 +82,14 @@ phosh_search_provider_result_meta_get_description (PhoshSearchProviderResultMeta
   return self->desc;
 }
 
+const char *
+phosh_search_provider_result_meta_get_clipboard_text (PhoshSearchProviderResultMeta *self)
+{
+  g_return_val_if_fail (self != NULL, NULL);
+
+  return self->clipboard_text;
+}
+
 GIcon *
 phosh_search_provider_result_meta_get_icon (PhoshSearchProviderResultMeta *self)
 {
@@ -95,6 +103,8 @@ struct _PhoshSearchProviderPrivate {
   GAppInfo                 *info;
   PhoshDBusSearchProvider2 *proxy;
   GCancellable             *cancellable;
+  GCancellable             *parent_cancellable;
+  gulong                    parent_cancellable_handler;
   GDBusProxyFlags           proxy_flags;
   char                     *bus_name;
   char                     *bus_path;
@@ -111,6 +121,7 @@ enum {
   PROP_BUS_PATH,
   PROP_AUTOSTART,
   PROP_DEFAULT_DISABLED,
+  PROP_PARENT_CANCELLABLE,
   LAST_PROP
 };
 static GParamSpec *pspecs[LAST_PROP] = { NULL, };
@@ -133,16 +144,13 @@ got_proxy (GObject      *source_object,
   priv->proxy = phosh_dbus_search_provider2_proxy_new_for_bus_finish (res, &error);
 
   if (error) {
-    g_warning ("Unable to create proxy for %s-%s: %s",
-               priv->bus_name,
+    g_warning ("[%s]: Unable to create proxy: %s",
                priv->bus_path,
                error->message);
     return;
   }
 
-  g_debug ("Got proxy for %s%s",
-           priv->bus_name,
-           priv->bus_path);
+  g_debug ("[%s]: Got proxy", priv->bus_path);
 
   g_signal_emit (self, signals[READY], 0);
 }
@@ -173,14 +181,30 @@ phosh_search_provider_finalize (GObject *object)
   // Stop any operations still in flight
   g_cancellable_cancel (priv->cancellable);
 
+  g_cancellable_disconnect (priv->parent_cancellable,
+                            priv->parent_cancellable_handler);
+
   g_clear_object (&priv->info);
   g_clear_object (&priv->proxy);
   g_clear_object (&priv->cancellable);
+  g_clear_object (&priv->parent_cancellable);
 
   g_clear_pointer (&priv->bus_name, g_free);
   g_clear_pointer (&priv->bus_path, g_free);
 
   G_OBJECT_CLASS (phosh_search_provider_parent_class)->finalize (object);
+}
+
+static void
+parent_canceled (GCancellable *cancellable,
+                 PhoshSearchProvider *self)
+{
+  PhoshSearchProviderPrivate *priv = phosh_search_provider_get_instance_private (self);
+
+  g_debug ("Provider %s cancelling", priv->bus_name);
+
+  g_cancellable_cancel (priv->cancellable);
+  g_cancellable_reset (priv->cancellable);
 }
 
 static void
@@ -195,6 +219,15 @@ phosh_search_provider_set_property (GObject      *object,
   switch (property_id) {
     case PROP_APP_INFO:
       priv->info = g_value_dup_object (value);
+      break;
+    case PROP_PARENT_CANCELLABLE:
+      priv->parent_cancellable = g_value_dup_object (value);
+      if (priv->parent_cancellable) {
+        priv->parent_cancellable_handler = g_cancellable_connect (priv->parent_cancellable,
+                                                                  G_CALLBACK (parent_canceled),
+                                                                  self,
+                                                                  NULL);
+      }
       break;
     case PROP_BUS_NAME:
       priv->bus_name = g_value_dup_string (value);
@@ -234,6 +267,9 @@ phosh_search_provider_get_property (GObject    *object,
     case PROP_APP_INFO:
       g_value_set_object (value, priv->info);
       break;
+    case PROP_PARENT_CANCELLABLE:
+      g_value_set_object (value, priv->parent_cancellable);
+      break;
     case PROP_BUS_NAME:
       g_value_set_string (value, priv->bus_name);
       break;
@@ -265,6 +301,12 @@ phosh_search_provider_class_init (PhoshSearchProviderClass *klass)
   pspecs[PROP_APP_INFO] =
     g_param_spec_object ("app-info", "App info", "Application info",
                          G_TYPE_APP_INFO,
+                         G_PARAM_READWRITE | G_PARAM_CONSTRUCT_ONLY);
+
+  pspecs[PROP_PARENT_CANCELLABLE] =
+    g_param_spec_object ("parent-cancellable", "Parent cancellable",
+                         "Cancellable for the manager",
+                         G_TYPE_CANCELLABLE,
                          G_PARAM_READWRITE | G_PARAM_CONSTRUCT_ONLY);
 
   pspecs[PROP_BUS_NAME] =
@@ -303,7 +345,8 @@ phosh_search_provider_init (PhoshSearchProvider *self)
 
   priv->bus_name = NULL;
   priv->bus_path = NULL;
-  priv->cancellable = NULL;
+  priv->cancellable = g_cancellable_new ();
+  priv->parent_cancellable = NULL;
   priv->info = NULL;
   priv->proxy = NULL;
   priv->proxy_flags = G_DBUS_PROXY_FLAGS_DO_NOT_LOAD_PROPERTIES;
@@ -312,14 +355,16 @@ phosh_search_provider_init (PhoshSearchProvider *self)
 }
 
 PhoshSearchProvider *
-phosh_search_provider_new (const char *desktop_app_id,
-                           const char *bus_path,
-                           const char *bus_name,
-                           gboolean    autostart,
-                           gboolean    default_disabled)
+phosh_search_provider_new (const char   *desktop_app_id,
+                           GCancellable *parent_cancellable,
+                           const char   *bus_path,
+                           const char   *bus_name,
+                           gboolean      autostart,
+                           gboolean      default_disabled)
 {
   return g_object_new (PHOSH_TYPE_SEARCH_PROVIDER,
                        "app-info", g_desktop_app_info_new (desktop_app_id),
+                       "parent-cancellable", parent_cancellable,
                        "bus-path", bus_path,
                        "bus-name", bus_name,
                        "autostart", autostart,
@@ -451,7 +496,7 @@ get_result_icon (PhoshSearchProvider *self,
     icon = g_icon_new_for_string (icon_data, &error);
 
     if (error) {
-      g_warning ("%s provided a bad icon: %s", priv->bus_name, error->message);
+      g_warning ("[%s]: bad icon: %s", priv->bus_path, error->message);
     }
   } else if (g_variant_dict_lookup (result_meta, "icon-data", "iiibiiay", &width, &height, &row_stride, &has_alpha, &sample_size, &channels, &icon_data)) {
     icon = G_ICON (gdk_pixbuf_new_from_data ((guchar *) icon_data,
@@ -491,6 +536,12 @@ got_result_meta (GObject      *source,
                                                             &error);
 
   results = g_ptr_array_new_full (100, phosh_search_provider_result_meta_free);
+
+  // Some providers decide to provide NULL instead of an empty array
+  // thus we do what JS does and map NULL to an empty array
+  if (metas == NULL) {
+    metas = g_variant_new ("aa{sv}", NULL);
+  }
 
   g_variant_iter_init (&iter, metas);
   while (g_variant_iter_loop (&iter, "@a{sv}", &val)) {
@@ -579,6 +630,7 @@ phosh_search_provider_get_result_meta_finish (PhoshSearchProvider  *self,
 struct GetResultsData {
   gboolean inital;
   GTask *task;
+  PhoshSearchProvider *self;
 };
 
 static void
@@ -586,9 +638,12 @@ got_results (GObject      *source,
              GAsyncResult *res,
              gpointer      user_data)
 {
+  PhoshSearchProviderPrivate *priv;
   g_autoptr (GError) error = NULL;
   struct GetResultsData *data = user_data;
   GStrv results = NULL;
+
+  priv = phosh_search_provider_get_instance_private (data->self);
 
   if (data->inital) {
     phosh_dbus_search_provider2_call_get_initial_result_set_finish (PHOSH_DBUS_SEARCH_PROVIDER2 (source),
@@ -603,13 +658,14 @@ got_results (GObject      *source,
   }
 
   if (error) {
-    g_warning ("Search failed: %s", error->message);
+    g_task_return_error (data->task, error);
+  } else {
+    g_task_return_pointer (G_TASK (data->task),
+                          results,
+                          (GDestroyNotify) g_strfreev);
   }
 
-  g_task_return_pointer (G_TASK (data->task),
-                         results,
-                         (GDestroyNotify) g_strfreev);
-
+  g_object_unref (data->self);
   g_free (data);
 }
 
@@ -628,6 +684,7 @@ phosh_search_provider_get_initial (PhoshSearchProvider *self,
   data = g_new (struct GetResultsData, 1);
   data->inital = TRUE;
   data->task = task;
+  data->self = g_object_ref (self);
 
   phosh_dbus_search_provider2_call_get_initial_result_set (PHOSH_DBUS_SEARCH_PROVIDER2 (priv->proxy),
                                                            terms,
@@ -662,6 +719,7 @@ phosh_search_provider_get_subsearch (PhoshSearchProvider *self,
   data = g_new (struct GetResultsData, 1);
   data->inital = FALSE;
   data->task = task;
+  data->self = g_object_ref (self);
 
   phosh_dbus_search_provider2_call_get_subsearch_result_set (PHOSH_DBUS_SEARCH_PROVIDER2 (priv->proxy),
                                                              results,
@@ -679,4 +737,17 @@ phosh_search_provider_get_subsearch_finish (PhoshSearchProvider  *self,
   g_return_val_if_fail (g_task_is_valid (res, self), NULL);
 
   return g_task_propagate_pointer (G_TASK (res), error);
+}
+
+
+gboolean
+phosh_search_provider_get_ready (PhoshSearchProvider  *self)
+{
+  PhoshSearchProviderPrivate *priv;
+
+  g_return_val_if_fail (PHOSH_IS_SEARCH_PROVIDER (self), FALSE);
+
+  priv = phosh_search_provider_get_instance_private (self);
+
+  return priv->proxy != NULL;
 }
