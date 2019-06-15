@@ -18,5 +18,9 @@ struct _PhoshSearchClass
   GObjectClass parent_class;
 };
 
+void        phosh_search_set_terms     (PhoshSearch *self,
+                                        GStrv        terms);
+const char *phosh_search_markup_string (PhoshSearch *self,
+                                        const char  *str);
 
 G_END_DECLS

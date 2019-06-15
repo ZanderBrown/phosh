@@ -36,6 +36,7 @@ struct _PhoshSearchProviderClass
 };
 
 PhoshSearchProvider *phosh_search_provider_new                    (const char          *desktop_app_id,
+                                                                   GCancellable        *parent_cancellable,
                                                                    const char          *bus_path,
                                                                    const char          *bus_name,
                                                                    gboolean             autostart,
@@ -69,5 +70,6 @@ void                 phosh_search_provider_get_subsearch          (PhoshSearchPr
 GStrv                phosh_search_provider_get_subsearch_finish   (PhoshSearchProvider  *self,
                                                                    GAsyncResult         *res,
                                                                    GError              **error);
+gboolean             phosh_search_provider_get_ready              (PhoshSearchProvider  *self);
 
 G_END_DECLS
