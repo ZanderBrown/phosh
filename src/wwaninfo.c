@@ -13,7 +13,7 @@
 #include "wwaninfo.h"
 #include "wwan/phosh-wwan-mm.h"
 
-#define WWAN_INFO_DEFAULT_ICON_SIZE 16
+#define WWAN_INFO_DEFAULT_ICON_SIZE 24
 
 /**
  * SECTION:phosh-wwan-info

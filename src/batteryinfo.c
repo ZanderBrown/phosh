@@ -13,7 +13,7 @@
 #include "batteryinfo.h"
 #include "upower.h"
 
-#define BATTERY_INFO_DEFAULT_ICON_SIZE GTK_ICON_SIZE_SMALL_TOOLBAR
+#define BATTERY_INFO_DEFAULT_ICON_SIZE GTK_ICON_SIZE_LARGE_TOOLBAR
 
 /**
  * SECTION:phosh-battery-info
