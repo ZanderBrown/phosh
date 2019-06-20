@@ -19,9 +19,9 @@ struct _PhoshAppGridPrivate {
 
   GtkWidget *search;
   GtkWidget *apps;
-  GtkWidget *apps_revealer;
   GtkWidget *favs;
   GtkWidget *expand_image;
+  GtkWidget *scroller;
 
   gboolean apps_expanded;
 
@@ -180,12 +180,25 @@ create_launcher (gpointer item,
 }
 
 static void
+launcher_scrolled (GtkAdjustment *adjustment,
+                   PhoshAppGrid  *self)
+{
+  GtkStyleContext *context = gtk_widget_get_style_context (GTK_WIDGET (self));
+  if (gtk_adjustment_get_value (adjustment) > 0.0) {
+    gtk_style_context_add_class (context, "scrolled");
+  } else {
+    gtk_style_context_remove_class (context, "scrolled");
+  }
+}
+
+static void
 phosh_app_grid_init (PhoshAppGrid *self)
 {
   PhoshAppGridPrivate *priv = phosh_app_grid_get_instance_private (self);
   GtkSortListModel *sorted;
   GSimpleActionGroup *actions;
   GPropertyAction *expand_action;
+  GtkAdjustment *adj;
 
   gtk_widget_init_template (GTK_WIDGET (self));
 
@@ -196,9 +209,6 @@ phosh_app_grid_init (PhoshAppGrid *self)
 
   gtk_widget_insert_action_group (GTK_WIDGET (self),
                                   "app-grid", G_ACTION_GROUP (actions));
-
-  g_object_bind_property (self, "apps-expanded",
-                          priv->apps_revealer, "reveal-child", G_BINDING_DEFAULT);
 
   priv->settings = g_settings_new ("sm.puri.phosh");
   g_signal_connect (priv->settings, "changed::favorites",
@@ -216,6 +226,9 @@ phosh_app_grid_init (PhoshAppGrid *self)
                                            NULL);
   gtk_flow_box_bind_model (GTK_FLOW_BOX (priv->apps), G_LIST_MODEL (priv->model),
                            create_launcher, self, NULL);
+
+  adj = gtk_scrolled_window_get_vadjustment (GTK_SCROLLED_WINDOW (priv->scroller));
+  g_signal_connect (adj, "value-changed", G_CALLBACK (launcher_scrolled), self);
 }
 
 static void
@@ -320,9 +333,9 @@ phosh_app_grid_class_init (PhoshAppGridClass *klass)
 
   gtk_widget_class_bind_template_child_private (widget_class, PhoshAppGrid, search);
   gtk_widget_class_bind_template_child_private (widget_class, PhoshAppGrid, apps);
-  gtk_widget_class_bind_template_child_private (widget_class, PhoshAppGrid, apps_revealer);
   gtk_widget_class_bind_template_child_private (widget_class, PhoshAppGrid, favs);
   gtk_widget_class_bind_template_child_private (widget_class, PhoshAppGrid, expand_image);
+  gtk_widget_class_bind_template_child_private (widget_class, PhoshAppGrid, scroller);
 
   gtk_widget_class_bind_template_callback (widget_class, search_changed);
 
