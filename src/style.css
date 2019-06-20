@@ -166,7 +166,6 @@ phosh-app-grid {
 
 phosh-app-grid separator {
     background: gray;
-    padding: 1px;
 }
 
 phosh-app-grid-button {
@@ -178,4 +177,14 @@ phosh-app-grid-button button, phosh-app-grid-button button:hover {
     padding: 0;
     margin: 0;
     border: none;
+}
+
+.phosh-app-grid-expander {
+    border: none;
+    border-bottom: 1px solid transparent;
+    border-radius: 0;
+}
+
+.scrolled .phosh-app-grid-expander {
+    border-color: gray;
 }
