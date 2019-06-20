@@ -42,11 +42,18 @@
 }
 
 /* Favorites / Home screen */
-.phosh-app-btn {
-    background-image: none;
-    background-color: black;
-    border-width: 3px;
-    border-radius: 10px;
+phosh-app {
+    background: rgba(255,255,255,0.8);
+    border: none;
+    border-radius: 0;
+    box-shadow: 0 3px 3px black;
+    min-width: 250px;
+}
+
+phosh-app box {
+    background: rgba(0, 0, 0, 0.7);
+    padding: 6px;
+    color: white;
 }
 
 .phosh-app-name {

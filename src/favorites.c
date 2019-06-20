@@ -81,7 +81,8 @@ app_clicked_cb (GtkButton *btn, gpointer user_data)
 
 static void
 handle_xdg_switcher_xdg_surface (
-  void *data, struct phosh_private_xdg_switcher *phosh_private_xdg_switcher,
+  void *data,
+  struct phosh_private_xdg_switcher *phosh_private_xdg_switcher,
   const char *app_id,
   const char *title)
 {
@@ -95,6 +96,7 @@ handle_xdg_switcher_xdg_surface (
   g_debug ("Building activator for '%s' (%s)", app_id, title);
   app = phosh_app_new (app_id, title);
   gtk_box_pack_end (GTK_BOX (priv->box_running_apps), app, FALSE, FALSE, 0);
+  gtk_widget_show (app);
 
   g_signal_connect (app, "clicked", G_CALLBACK (app_clicked_cb), self);
   gtk_widget_show (GTK_WIDGET (self));
@@ -291,6 +293,7 @@ phosh_favorites_constructed (GObject *object)
   priv->box_running_apps = gtk_widget_new (GTK_TYPE_BOX,
                                           "halign", GTK_ALIGN_CENTER,
                                           "valign", GTK_ALIGN_FILL,
+                                          "spacing", 12,
                                           NULL);
   gtk_style_context_add_class (gtk_widget_get_style_context (GTK_WIDGET(priv->box_running_apps)),
                                "phosh-running-apps-flowbox");
