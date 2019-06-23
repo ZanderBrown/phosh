@@ -21,19 +21,32 @@
  * in the favorites overview.
  */
 
+// Icons actually sized according to the pixel-size set in the template
+#define APP_ICON_SIZE GTK_ICON_SIZE_DIALOG
+
 enum {
-  PHOSH_APP_PROP_0,
-  PHOSH_APP_PROP_APP_ID,
-  PHOSH_APP_PROP_TITLE,
-  PHOSH_APP_PROP_LAST_PROP,
+  PROP_0,
+  PROP_APP_ID,
+  PROP_TITLE,
+  PROP_MAX_WIDTH,
+  PROP_MAX_HEIGHT,
+  PROP_WIN_WIDTH,
+  PROP_WIN_HEIGHT,
+  LAST_PROP,
 };
-static GParamSpec *props[PHOSH_APP_PROP_LAST_PROP];
+static GParamSpec *props[LAST_PROP];
 
 typedef struct
 {
   GtkWidget *icon;
   GtkWidget *app_name;
   GtkWidget *win_title;
+  GtkWidget *box;
+
+  int win_width;
+  int win_height;
+  int max_width;
+  int max_height;
 
   char *app_id;
   char *title;
@@ -59,19 +72,39 @@ phosh_app_set_property (GObject *object,
   PhoshAppPrivate *priv = phosh_app_get_instance_private(self);
 
   switch (property_id) {
-  case PHOSH_APP_PROP_APP_ID:
-    g_free (priv->app_id);
-    priv->app_id = g_value_dup_string (value);
-    g_object_notify_by_pspec (G_OBJECT (self), props[PHOSH_APP_PROP_APP_ID]);
-    break;
-  case PHOSH_APP_PROP_TITLE:
-    g_free (priv->title);
-    priv->title = g_value_dup_string (value);
-    g_object_notify_by_pspec (G_OBJECT (self), props[PHOSH_APP_PROP_TITLE]);
-    break;
-  default:
-    G_OBJECT_WARN_INVALID_PROPERTY_ID (object, property_id, pspec);
-    break;
+    case PROP_APP_ID:
+      g_free (priv->app_id);
+      priv->app_id = g_value_dup_string (value);
+      g_object_notify_by_pspec (G_OBJECT (self), props[PROP_APP_ID]);
+      break;
+    case PROP_TITLE:
+      g_free (priv->title);
+      priv->title = g_value_dup_string (value);
+      g_object_notify_by_pspec (G_OBJECT (self), props[PROP_TITLE]);
+      break;
+    case PROP_WIN_WIDTH:
+      priv->win_width = g_value_get_int (value);
+      gtk_widget_queue_resize (GTK_WIDGET (self));
+      g_object_notify_by_pspec (G_OBJECT (self), props[PROP_WIN_WIDTH]);
+      break;
+    case PROP_WIN_HEIGHT:
+      priv->win_height = g_value_get_int (value);
+      gtk_widget_queue_resize (GTK_WIDGET (self));
+      g_object_notify_by_pspec (G_OBJECT (self), props[PROP_WIN_HEIGHT]);
+      break;
+    case PROP_MAX_WIDTH:
+      priv->max_width = g_value_get_int (value);
+      gtk_widget_queue_resize (GTK_WIDGET (self));
+      g_object_notify_by_pspec (G_OBJECT (self), props[PROP_MAX_WIDTH]);
+      break;
+    case PROP_MAX_HEIGHT:
+      priv->max_height = g_value_get_int (value);
+      gtk_widget_queue_resize (GTK_WIDGET (self));
+      g_object_notify_by_pspec (G_OBJECT (self), props[PROP_MAX_HEIGHT]);
+      break;
+    default:
+      G_OBJECT_WARN_INVALID_PROPERTY_ID (object, property_id, pspec);
+      break;
   }
 }
 
@@ -86,15 +119,27 @@ phosh_app_get_property (GObject *object,
   PhoshAppPrivate *priv = phosh_app_get_instance_private(self);
 
   switch (property_id) {
-  case PHOSH_APP_PROP_APP_ID:
-    g_value_set_string (value, priv->app_id);
-    break;
-  case PHOSH_APP_PROP_TITLE:
-    g_value_set_string (value, priv->title);
-    break;
-  default:
-    G_OBJECT_WARN_INVALID_PROPERTY_ID (object, property_id, pspec);
-    break;
+    case PROP_APP_ID:
+      g_value_set_string (value, priv->app_id);
+      break;
+    case PROP_TITLE:
+      g_value_set_string (value, priv->title);
+      break;
+    case PROP_WIN_WIDTH:
+      g_value_set_int (value, priv->win_width);
+      break;
+    case PROP_WIN_HEIGHT:
+      g_value_set_int (value, priv->win_height);
+      break;
+    case PROP_MAX_WIDTH:
+      g_value_set_int (value, priv->max_width);
+      break;
+    case PROP_MAX_HEIGHT:
+      g_value_set_int (value, priv->max_height);
+      break;
+    default:
+      G_OBJECT_WARN_INVALID_PROPERTY_ID (object, property_id, pspec);
+      break;
   }
 }
 
@@ -128,12 +173,12 @@ phosh_app_constructed (GObject *object)
     gtk_label_set_label (GTK_LABEL (priv->app_name), name ? name : priv->app_id);
     gtk_image_set_from_gicon (GTK_IMAGE (priv->icon),
                               g_app_info_get_icon (G_APP_INFO (priv->info)),
-                              GTK_ICON_SIZE_DIALOG);
+                              APP_ICON_SIZE);
   } else {
     gtk_label_set_label (GTK_LABEL (priv->app_name), priv->app_id);
     gtk_image_set_from_icon_name (GTK_IMAGE (priv->icon),
                                   "missing-image",
-                                  GTK_ICON_SIZE_DIALOG);
+                                  APP_ICON_SIZE);
   }
 
   /* Only set a title if it's different from the applications name to
@@ -173,6 +218,87 @@ phosh_app_finalize (GObject *object)
   G_OBJECT_CLASS (phosh_app_parent_class)->finalize (object);
 }
 
+static GtkSizeRequestMode
+phosh_app_get_request_mode (GtkWidget *widgte)
+{
+  return GTK_SIZE_REQUEST_HEIGHT_FOR_WIDTH;
+}
+
+static void
+phosh_app_get_preferred_height_for_width (GtkWidget *widget,
+                                          int        width,
+                                          int       *min,
+                                          int       *nat)
+{
+  PhoshAppPrivate *priv;
+  int smallest = 0;
+  int size = 420;
+  int box_smallest = 0;
+
+  g_return_if_fail (PHOSH_IS_APP (widget));
+  priv = phosh_app_get_instance_private (PHOSH_APP (widget));
+
+  GTK_WIDGET_CLASS (phosh_app_parent_class)->get_preferred_height_for_width (widget,
+                                                                             width,
+                                                                             &smallest,
+                                                                             NULL);
+  gtk_widget_get_preferred_height_for_width (priv->box, width, &box_smallest, NULL);
+
+  smallest = MAX (smallest, box_smallest);
+
+  size = MAX ((width / ((gdouble) priv->win_width / (gdouble) priv->win_height)), smallest);
+
+  size = MIN (size, priv->max_height);
+
+  if (min) {
+    *min = size;
+  }
+
+  if (nat) {
+    *nat = size;
+  }
+}
+
+static void
+phosh_app_get_preferred_width (GtkWidget *widget, int *min, int *nat)
+{
+  PhoshAppPrivate *priv;
+  int smallest = 0;
+  int box_smallest = 0;
+  int size = 250;
+
+  g_return_if_fail (PHOSH_IS_APP (widget));
+  priv = phosh_app_get_instance_private (PHOSH_APP (widget));
+
+  GTK_WIDGET_CLASS (phosh_app_parent_class)->get_preferred_width (widget,
+                                                                  &smallest,
+                                                                  NULL);
+  gtk_widget_get_preferred_width (priv->box, &box_smallest, NULL);
+
+  smallest = MAX (smallest, box_smallest);
+
+  size = MAX ((priv->max_height / ((gdouble) priv->win_height / (gdouble) priv->win_width)), smallest);
+
+  size = MIN (size, priv->max_width);
+
+  if (min) {
+    *min = size;
+  }
+
+  if (nat) {
+    *nat = size;
+  }
+}
+
+static void
+phosh_app_get_preferred_width_for_height (GtkWidget *widget,
+                                          int        height,
+                                          int       *min,
+                                          int       *nat)
+{
+  phosh_app_get_preferred_width (widget, min, nat);
+}
+
 static void
 phosh_app_class_init (PhoshAppClass *klass)
 {
@@ -186,7 +312,12 @@ phosh_app_class_init (PhoshAppClass *klass)
   object_class->set_property = phosh_app_set_property;
   object_class->get_property = phosh_app_get_property;
 
-  props[PHOSH_APP_PROP_APP_ID] =
+  widget_class->get_request_mode = phosh_app_get_request_mode;
+  widget_class->get_preferred_width = phosh_app_get_preferred_width;
+  widget_class->get_preferred_height_for_width = phosh_app_get_preferred_height_for_width;
+  widget_class->get_preferred_width_for_height = phosh_app_get_preferred_width_for_height;
+
+  props[PROP_APP_ID] =
     g_param_spec_string (
       "app-id",
       "app-id",
@@ -194,7 +325,7 @@ phosh_app_class_init (PhoshAppClass *klass)
       "",
       G_PARAM_CONSTRUCT_ONLY | G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS);
 
-  props[PHOSH_APP_PROP_TITLE] =
+  props[PROP_TITLE] =
     g_param_spec_string (
       "title",
       "title",
@@ -202,13 +333,54 @@ phosh_app_class_init (PhoshAppClass *klass)
       "",
       G_PARAM_CONSTRUCT_ONLY | G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS);
 
-  g_object_class_install_properties (object_class, PHOSH_APP_PROP_LAST_PROP, props);
+  props[PROP_WIN_WIDTH] =
+    g_param_spec_int (
+      "win-width",
+      "Window Width",
+      "The window's width",
+      0,
+      G_MAXINT,
+      300,
+      G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS);
+
+  props[PROP_WIN_HEIGHT] =
+    g_param_spec_int (
+      "win-height",
+      "Window Height",
+      "The window's height",
+      0,
+      G_MAXINT,
+      300,
+      G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS);
+
+  props[PROP_MAX_WIDTH] =
+    g_param_spec_int (
+      "max-width",
+      "Max Width",
+      "The button's max width",
+      50,
+      G_MAXINT,
+      300,
+      G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS);
+
+  props[PROP_MAX_HEIGHT] =
+    g_param_spec_int (
+      "max-height",
+      "Max Height",
+      "The button max height",
+      50,
+      G_MAXINT,
+      300,
+      G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS);
+
+  g_object_class_install_properties (object_class, LAST_PROP, props);
 
   gtk_widget_class_set_template_from_resource (widget_class, "/sm/puri/phosh/ui/app.ui");
 
   gtk_widget_class_bind_template_child_private (widget_class, PhoshApp, app_name);
   gtk_widget_class_bind_template_child_private (widget_class, PhoshApp, win_title);
   gtk_widget_class_bind_template_child_private (widget_class, PhoshApp, icon);
+  gtk_widget_class_bind_template_child_private (widget_class, PhoshApp, box);
 
   gtk_widget_class_set_css_name (widget_class, "phosh-app");
 }

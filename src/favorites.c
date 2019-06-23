@@ -86,6 +86,7 @@ handle_xdg_switcher_xdg_surface (
   const char *app_id,
   const char *title)
 {
+  PhoshMonitor *monitor = phosh_shell_get_primary_monitor (phosh_shell_get_default());
   PhoshFavorites *self = data;
   PhoshFavoritesPrivate *priv;
   GtkWidget *app;
@@ -95,6 +96,12 @@ handle_xdg_switcher_xdg_surface (
 
   g_debug ("Building activator for '%s' (%s)", app_id, title);
   app = phosh_app_new (app_id, title);
+  g_object_set (app,
+                "win-width", 360,  // TODO: Get the real size somehow
+                "win-height", 640,
+                "max-height", 445,
+                "max-width", (int) (((gdouble) monitor->width / (gdouble) monitor->scale) * 0.75),
+                NULL);
   gtk_box_pack_end (GTK_BOX (priv->box_running_apps), app, FALSE, FALSE, 0);
   gtk_widget_show (app);
 
@@ -290,12 +297,12 @@ phosh_favorites_constructed (GObject *object)
   favorites_changed (priv->settings, "favorites", self);
 
   /* Running apps */
-  priv->box_running_apps = gtk_widget_new (GTK_TYPE_BOX,
-                                          "halign", GTK_ALIGN_CENTER,
-                                          "valign", GTK_ALIGN_FILL,
+  priv->box_running_apps = g_object_new (GTK_TYPE_BOX,
+                                         "valign", GTK_ALIGN_CENTER,
+                                         "halign", GTK_ALIGN_FILL,
                                           "spacing", 12,
                                           NULL);
-  gtk_style_context_add_class (gtk_widget_get_style_context (GTK_WIDGET(priv->box_running_apps)),
+  gtk_style_context_add_class (gtk_widget_get_style_context (GTK_WIDGET (priv->box_running_apps)),
                                "phosh-running-apps-flowbox");
   gtk_container_add (GTK_CONTAINER (priv->sw_running_apps), priv->box_running_apps);
   gtk_widget_show (GTK_WIDGET(priv->evbox_running_apps));

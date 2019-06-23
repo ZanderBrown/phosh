@@ -47,7 +47,8 @@ phosh-app {
     border: none;
     border-radius: 0;
     box-shadow: 0 3px 3px black;
-    min-width: 250px;
+    background: url('resource:///sm/puri/phosh/fake-app.png');
+    background-size: cover;
 }
 
 phosh-app box {
