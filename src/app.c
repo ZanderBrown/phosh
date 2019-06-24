@@ -358,7 +358,7 @@ phosh_app_class_init (PhoshAppClass *klass)
       "max-width",
       "Max Width",
       "The button's max width",
-      50,
+      0,
       G_MAXINT,
       300,
       G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS);
@@ -368,7 +368,7 @@ phosh_app_class_init (PhoshAppClass *klass)
       "max-height",
       "Max Height",
       "The button max height",
-      50,
+      0,
       G_MAXINT,
       300,
       G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS);
@@ -389,7 +389,14 @@ phosh_app_class_init (PhoshAppClass *klass)
 static void
 phosh_app_init (PhoshApp *self)
 {
+  PhoshAppPrivate *priv = phosh_app_get_instance_private (self);
+
   gtk_widget_init_template (GTK_WIDGET (self));
+
+  priv->max_height = 100;
+  priv->max_width = 100;
+  priv->win_height = 300;
+  priv->win_width = 450;
 }
 
 

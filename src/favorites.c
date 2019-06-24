@@ -90,9 +90,13 @@ handle_xdg_switcher_xdg_surface (
   PhoshFavorites *self = data;
   PhoshFavoritesPrivate *priv;
   GtkWidget *app;
+  int max_width = 0;
 
   g_return_if_fail (PHOSH_IS_FAVORITES (self));
   priv = phosh_favorites_get_instance_private (self);
+
+  max_width = ((gdouble) monitor->width / (gdouble) monitor->scale) * 0.75;
+  max_width = MIN (max_width, 450);
 
   g_debug ("Building activator for '%s' (%s)", app_id, title);
   app = phosh_app_new (app_id, title);
@@ -100,7 +104,7 @@ handle_xdg_switcher_xdg_surface (
                 "win-width", 360,  // TODO: Get the real size somehow
                 "win-height", 640,
                 "max-height", 445,
-                "max-width", (int) (((gdouble) monitor->width / (gdouble) monitor->scale) * 0.75),
+                "max-width", max_width,
                 NULL);
   gtk_box_pack_end (GTK_BOX (priv->box_running_apps), app, FALSE, FALSE, 0);
   gtk_widget_show (app);
@@ -144,6 +148,34 @@ get_running_apps (PhoshFavorites *self)
   phosh_private_xdg_switcher_list_xdg_surfaces (priv->xdg_switcher);
 }
 
+static void
+set_max_height (GtkWidget *widget,
+                gpointer   user_data)
+{
+  int height = GPOINTER_TO_INT (user_data);
+
+  if (!PHOSH_IS_APP (widget)) {
+    return;
+  }
+
+  g_object_set (widget,
+                "max-height", height,
+                NULL);
+}
+
+static void
+running_apps_resized (GtkWidget     *widget,
+                      GtkAllocation *alloc,
+                      gpointer       data)
+{
+  PhoshFavorites *self = PHOSH_FAVORITES (data);
+  PhoshFavoritesPrivate *priv = phosh_favorites_get_instance_private (self);
+  int height = alloc->height * 0.8;
+
+  gtk_container_foreach (GTK_CONTAINER (priv->box_running_apps),
+                         set_max_height,
+                         GINT_TO_POINTER (height));
+}
 
 static void
 favorite_clicked_cb (GtkWidget *widget,
@@ -300,8 +332,8 @@ phosh_favorites_constructed (GObject *object)
   priv->box_running_apps = g_object_new (GTK_TYPE_BOX,
                                          "valign", GTK_ALIGN_CENTER,
                                          "halign", GTK_ALIGN_FILL,
-                                          "spacing", 12,
-                                          NULL);
+                                         "spacing", 12,
+                                         NULL);
   gtk_style_context_add_class (gtk_widget_get_style_context (GTK_WIDGET (priv->box_running_apps)),
                                "phosh-running-apps-flowbox");
   gtk_container_add (GTK_CONTAINER (priv->sw_running_apps), priv->box_running_apps);
