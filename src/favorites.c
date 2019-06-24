@@ -217,12 +217,13 @@ phosh_favorites_constructed (GObject *object)
 
   get_running_apps (self);
 
-  g_signal_connect (priv->sw_running_apps,
+  g_signal_connect (priv->app_grid, "app-launched",
+                    G_CALLBACK (app_launched_cb), self);
+
+  g_signal_connect (priv->revealer_running_apps,
                     "size-allocate",
                     G_CALLBACK (running_apps_resized),
                     self);
-  g_signal_connect (priv->app_grid, "app-launched",
-                    G_CALLBACK (app_launched_cb), self);
 
   g_object_bind_property (priv->app_grid, "apps-expanded",
                           priv->revealer_running_apps, "reveal-child", G_BINDING_INVERT_BOOLEAN);
@@ -261,6 +262,7 @@ phosh_favorites_class_init (PhoshFavoritesClass *klass)
   gtk_widget_class_bind_template_child_private (widget_class, PhoshFavorites, revealer_running_apps);
   gtk_widget_class_bind_template_child_private (widget_class, PhoshFavorites, sw_running_apps);
   gtk_widget_class_bind_template_child_private (widget_class, PhoshFavorites, app_grid);
+  gtk_widget_class_bind_template_child_private (widget_class, PhoshFavorites, box_running_apps);
 
   gtk_widget_class_bind_template_callback (widget_class, evbox_button_press_event_cb);
 
