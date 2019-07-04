@@ -35,13 +35,11 @@ typedef struct
 {
   /* Favorites */
   GtkWidget *evbox_favorites;
-  GtkWidget *sw_favorites;
   GtkWidget *fb_favorites;
   GSettings *settings;
 
   /* Running apps */
   GtkWidget *evbox_running_apps;
-  GtkWidget *sw_running_apps;
   GtkWidget *box_running_apps;
   struct phosh_private_xdg_switcher *xdg_switcher;
 
@@ -261,7 +259,9 @@ draw_cb (GtkWidget *widget, cairo_t *cr, gpointer unused)
   GdkRGBA c;
 
   G_GNUC_BEGIN_IGNORE_DEPRECATIONS
-    gtk_style_context_get_background_color (context, GTK_STATE_FLAG_NORMAL, &c);
+    gtk_style_context_get_background_color (context,
+                                            gtk_style_context_get_state (context),
+                                            &c);
   G_GNUC_END_IGNORE_DEPRECATIONS
   cairo_set_source_rgba (cr, c.red, c.green, c.blue, 0.8);
   cairo_set_operator (cr, CAIRO_OPERATOR_SOURCE);
@@ -300,23 +300,6 @@ phosh_favorites_constructed (GObject *object)
                     G_CALLBACK(draw_cb),
                     NULL);
 
-  gtk_style_context_add_class (
-      gtk_widget_get_style_context (GTK_WIDGET (self)),
-      "phosh-favorites");
-
-  /* Favorites */
-  priv->fb_favorites = gtk_widget_new (GTK_TYPE_FLOW_BOX,
-                                       "halign", GTK_ALIGN_CENTER,
-                                       "valign", GTK_ALIGN_START,
-                                       "selection-mode", GTK_SELECTION_NONE,
-                                       "orientation", GTK_ORIENTATION_HORIZONTAL,
-                                       NULL);
-  gtk_style_context_add_class (gtk_widget_get_style_context (GTK_WIDGET(priv->fb_favorites)),
-                               "phosh-favorites-flowbox");
-  gtk_flow_box_set_max_children_per_line (GTK_FLOW_BOX(priv->fb_favorites), G_MAXINT);
-  gtk_flow_box_set_homogeneous (GTK_FLOW_BOX(priv->fb_favorites), TRUE);
-  gtk_container_add (GTK_CONTAINER (priv->sw_favorites), priv->fb_favorites);
-  gtk_widget_show (GTK_WIDGET(priv->evbox_favorites));
   /* Close on click */
   g_signal_connect_swapped (priv->evbox_favorites, "button_press_event",
                             G_CALLBACK (evbox_button_press_event_cb),
@@ -328,16 +311,6 @@ phosh_favorites_constructed (GObject *object)
                     G_CALLBACK (favorites_changed), self);
   favorites_changed (priv->settings, "favorites", self);
 
-  /* Running apps */
-  priv->box_running_apps = g_object_new (GTK_TYPE_BOX,
-                                         "valign", GTK_ALIGN_CENTER,
-                                         "halign", GTK_ALIGN_FILL,
-                                         "spacing", 12,
-                                         NULL);
-  gtk_style_context_add_class (gtk_widget_get_style_context (GTK_WIDGET (priv->box_running_apps)),
-                               "phosh-running-apps-flowbox");
-  gtk_container_add (GTK_CONTAINER (priv->sw_running_apps), priv->box_running_apps);
-  gtk_widget_show (GTK_WIDGET(priv->evbox_running_apps));
   /* Close on click */
   g_signal_connect_swapped (priv->evbox_running_apps, "button_press_event",
                             G_CALLBACK (evbox_button_press_event_cb),
@@ -377,9 +350,8 @@ phosh_favorites_class_init (PhoshFavoritesClass *klass)
                                                "/sm/puri/phosh/ui/favorites.ui");
 
   gtk_widget_class_bind_template_child_private (widget_class, PhoshFavorites, evbox_favorites);
-  gtk_widget_class_bind_template_child_private (widget_class, PhoshFavorites, sw_favorites);
+  gtk_widget_class_bind_template_child_private (widget_class, PhoshFavorites, fb_favorites);
   gtk_widget_class_bind_template_child_private (widget_class, PhoshFavorites, evbox_running_apps);
-  gtk_widget_class_bind_template_child_private (widget_class, PhoshFavorites, sw_running_apps);
   gtk_widget_class_bind_template_child_private (widget_class, PhoshFavorites, box_running_apps);
 
   signals[APP_LAUNCHED] = g_signal_new ("app-launched",
