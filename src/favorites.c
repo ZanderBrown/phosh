@@ -317,6 +317,11 @@ phosh_favorites_constructed (GObject *object)
                             self);
   gtk_widget_set_events (priv->evbox_running_apps, GDK_BUTTON_PRESS_MASK);
   get_running_apps (self);
+
+  g_signal_connect (priv->evbox_running_apps,
+                    "size-allocate",
+                    G_CALLBACK (running_apps_resized),
+                    self);
 }
 
 
