@@ -22,7 +22,7 @@
  */
 
 // Icons actually sized according to the pixel-size set in the template
-#define APP_ICON_SIZE GTK_ICON_SIZE_DIALOG
+#define APP_ICON_SIZE -1
 
 enum {
   PROP_0,
@@ -40,7 +40,6 @@ typedef struct
 {
   GtkWidget *icon;
   GtkWidget *app_name;
-  GtkWidget *win_title;
   GtkWidget *box;
 
   int win_width;
@@ -179,15 +178,6 @@ phosh_app_constructed (GObject *object)
     gtk_image_set_from_icon_name (GTK_IMAGE (priv->icon),
                                   "missing-image",
                                   APP_ICON_SIZE);
-  }
-
-  /* Only set a title if it's different from the applications name to
-     avoid printing the same thing twice */
-  if (g_strcmp0 (gtk_label_get_text(GTK_LABEL (priv->app_name)),
-                 priv->title)) {
-    gtk_label_set_text (GTK_LABEL (priv->win_title), priv->title);
-  } else {
-    gtk_label_set_text (GTK_LABEL (priv->win_title), "");
   }
 
   G_OBJECT_CLASS (phosh_app_parent_class)->constructed (object);
@@ -378,7 +368,6 @@ phosh_app_class_init (PhoshAppClass *klass)
   gtk_widget_class_set_template_from_resource (widget_class, "/sm/puri/phosh/ui/app.ui");
 
   gtk_widget_class_bind_template_child_private (widget_class, PhoshApp, app_name);
-  gtk_widget_class_bind_template_child_private (widget_class, PhoshApp, win_title);
   gtk_widget_class_bind_template_child_private (widget_class, PhoshApp, icon);
   gtk_widget_class_bind_template_child_private (widget_class, PhoshApp, box);
 
@@ -401,7 +390,8 @@ phosh_app_init (PhoshApp *self)
 
 
 GtkWidget *
-phosh_app_new (const char *app_id, const char *title)
+phosh_app_new (const char *app_id,
+               const char *title)
 {
   return g_object_new (PHOSH_TYPE_APP,
                        "app-id", app_id,

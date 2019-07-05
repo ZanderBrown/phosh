@@ -25,58 +25,24 @@
             <property name="visible">True</property>
             <property name="can_focus">False</property>
             <property name="valign">end</property>
-            <property name="orientation">vertical</property>
+            <property name="orientation">horizontal</property>
             <property name="spacing">6</property>
             <child>
               <object class="GtkImage" id="icon">
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
                 <property name="halign">start</property>
-                <property name="pixel_size">64</property>
+                <property name="pixel_size">32</property>
                 <property name="icon_name">application-x-executable</property>
                 <property name="icon_size">6</property>
               </object>
-              <packing>
-                <property name="expand">False</property>
-                <property name="fill">True</property>
-                <property name="position">0</property>
-              </packing>
             </child>
             <child>
               <object class="GtkLabel" id="app_name">
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
                 <property name="halign">start</property>
-                <property name="label" translatable="yes">Application</property>
-                <property name="ellipsize">middle</property>
-                <property name="max_width_chars">30</property>
-                <style>
-                  <class name="phosh-app-name"/>
-                </style>
               </object>
-              <packing>
-                <property name="expand">False</property>
-                <property name="fill">True</property>
-                <property name="position">1</property>
-              </packing>
-            </child>
-            <child>
-              <object class="GtkLabel" id="win_title">
-                <property name="visible">True</property>
-                <property name="can_focus">False</property>
-                <property name="halign">start</property>
-                <property name="label" translatable="yes">Title</property>
-                <property name="ellipsize">middle</property>
-                <property name="max_width_chars">30</property>
-                <style>
-                  <class name="phosh-app-title"/>
-                </style>
-              </object>
-              <packing>
-                <property name="expand">False</property>
-                <property name="fill">True</property>
-                <property name="position">2</property>
-              </packing>
             </child>
           </object>
           <packing>
