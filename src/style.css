@@ -46,9 +46,9 @@ phosh-app {
     background: rgba(255,255,255,0.8);
     border: none;
     border-radius: 0;
-    box-shadow: 0 3px 3px black;
     background: url('resource:///sm/puri/phosh/fake-app.svg');
     background-size: cover;
+    box-shadow: 0 2px 2px rgba(0,0,0,0.4), 0 3px 16px rgba(0,0,0,0.3);
 }
 
 phosh-app box {
