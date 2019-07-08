@@ -167,14 +167,13 @@ phosh_app_constructed (GObject *object)
     priv->info = g_desktop_app_info_new (desktop_id);
   }
 
+  gtk_label_set_label (GTK_LABEL (priv->app_name), priv->title);
+
   if (priv->info) {
-    name = g_desktop_app_info_get_locale_string (priv->info, "Name");
-    gtk_label_set_label (GTK_LABEL (priv->app_name), name ? name : priv->app_id);
     gtk_image_set_from_gicon (GTK_IMAGE (priv->icon),
                               g_app_info_get_icon (G_APP_INFO (priv->info)),
                               APP_ICON_SIZE);
   } else {
-    gtk_label_set_label (GTK_LABEL (priv->app_name), priv->app_id);
     gtk_image_set_from_icon_name (GTK_IMAGE (priv->icon),
                                   "missing-image",
                                   APP_ICON_SIZE);
