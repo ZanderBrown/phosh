@@ -22,6 +22,7 @@
 #include <gio/gdesktopappinfo.h>
 
 #define FAVORITES_ICON_SIZE 64
+#define APP_MAX_HEIGHT(height) ((int) ((double) height * 0.8))
 
 enum {
   APP_LAUNCHED,
@@ -89,6 +90,7 @@ handle_xdg_switcher_xdg_surface (
   PhoshFavoritesPrivate *priv;
   GtkWidget *app;
   int max_width = 0;
+  int box_height = 0;
 
   g_return_if_fail (PHOSH_IS_FAVORITES (self));
   priv = phosh_favorites_get_instance_private (self);
@@ -96,12 +98,14 @@ handle_xdg_switcher_xdg_surface (
   max_width = ((gdouble) monitor->width / (gdouble) monitor->scale) * 0.75;
   max_width = MIN (max_width, 450);
 
+  box_height = gtk_widget_get_allocated_height (priv->evbox_running_apps);
+
   g_debug ("Building activator for '%s' (%s)", app_id, title);
   app = phosh_app_new (app_id, title);
   g_object_set (app,
                 "win-width", 360,  // TODO: Get the real size somehow
                 "win-height", 640,
-                "max-height", 445,
+                "max-height", APP_MAX_HEIGHT (box_height),
                 "max-width", max_width,
                 NULL);
   gtk_box_pack_end (GTK_BOX (priv->box_running_apps), app, FALSE, FALSE, 0);
@@ -168,7 +172,7 @@ running_apps_resized (GtkWidget     *widget,
 {
   PhoshFavorites *self = PHOSH_FAVORITES (data);
   PhoshFavoritesPrivate *priv = phosh_favorites_get_instance_private (self);
-  int height = alloc->height * 0.8;
+  int height = APP_MAX_HEIGHT (alloc->height);
 
   gtk_container_foreach (GTK_CONTAINER (priv->box_running_apps),
                          set_max_height,
