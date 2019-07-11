@@ -95,6 +95,10 @@ configure_file(
   input: 'run.in',
   output: 'run',
   configuration: run_data)
+configure_file(
+  input: 'run_tool.in',
+  output: 'run_tool',
+  configuration: run_data)
 
 gnome = import('gnome')
 i18n  = import('i18n')
