@@ -2,9 +2,13 @@
  * Copyright © 2019 Zander Brown <zbrown@gnome.org>
  *
  * SPDX-License-Identifier: GPL-3.0+
+ * 
+ * BUILDDIR $ ./run_tool ./tools/app-grid-standalone
+ * 
+ * PhoshAppGrid in a simple wrapper
  */
 
-#include "app-grid.h"
+#include <app-grid.h>
 
 static void
 css_setup (void)
