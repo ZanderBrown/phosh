@@ -25,13 +25,15 @@
                 <property name="can_focus">False</property>
                 <property name="vexpand">True</property>
                 <property name="transition_type">slide-up</property>
-                <property name="reveal_child">True</property>
+                <property name="reveal_child" bind-source="app_grid" bind-property="apps-expanded" bind-flags="sync-create|invert-boolean"/>
                 <child>
                   <object class="GtkEventBox" id="evbox_running_apps">
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
+                    <property name="vexpand">True</property>
                     <property name="events">GDK_BUTTON_PRESS_MASK | GDK_STRUCTURE_MASK</property>
                     <signal name="button-press-event" handler="evbox_button_press_event_cb" object="PhoshFavorites" swapped="yes"/>
+                    <signal name="size-allocate" handler="running_apps_resized" object="PhoshFavorites" swapped="yes"/>
                     <child>
                       <object class="GtkScrolledWindow" id="sw_running_apps">
                         <property name="visible">True</property>
@@ -78,6 +80,7 @@
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
                 <property name="valign">end</property>
+                <signal name="app-launched" handler="app_launched_cb" object="PhoshFavorites" swapped="yes"/>
               </object>
             </child>
           </object>
