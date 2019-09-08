@@ -306,3 +306,18 @@ phosh_overview_new (void)
 {
   return g_object_new (PHOSH_TYPE_OVERVIEW, NULL);
 }
+
+
+gboolean
+phosh_overview_handle_event (PhoshOverview *self,
+                             GdkEvent       *event)
+{
+  PhoshOverviewPrivate *priv;
+
+  g_return_val_if_fail (PHOSH_IS_OVERVIEW (self), GDK_EVENT_PROPAGATE);
+
+  priv = phosh_overview_get_instance_private (self);
+
+  return phosh_app_grid_handle_event (PHOSH_APP_GRID (priv->app_grid),
+                                      event);
+}

@@ -165,6 +165,10 @@ key_press_event_cb (PhoshHome *self, GdkEventKey *event, gpointer data)
       handled = TRUE;
       break;
     default:
+      if (self->state == PHOSH_HOME_STATE_UNFOLDED) {
+        handled = phosh_overview_handle_event (PHOSH_OVERVIEW (self->overview),
+                                               (GdkEvent *) event);
+      }
       /* nothing to do */
       break;
   }

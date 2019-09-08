@@ -205,13 +205,11 @@ phosh_app_grid_finalize (GObject *object)
 
 static gboolean
 phosh_app_grid_key_press_event (GtkWidget   *widget,
-                              GdkEventKey *event)
+                                GdkEventKey *event)
 {
   PhoshAppGrid *self = PHOSH_APP_GRID (widget);
-  PhoshAppGridPrivate *priv = phosh_app_grid_get_instance_private (self);
 
-  return gtk_search_entry_handle_event (GTK_SEARCH_ENTRY (priv->search),
-                                        (GdkEvent *) event);
+  return phosh_app_grid_handle_event (self, (GdkEvent *) event);
 }
 
 static void
@@ -267,4 +265,15 @@ GtkWidget *
 phosh_app_grid_new (void)
 {
   return g_object_new (PHOSH_TYPE_APP_GRID, NULL);
+}
+
+
+gboolean
+phosh_app_grid_handle_event (PhoshAppGrid *self,
+                             GdkEvent     *event)
+{
+  PhoshAppGridPrivate *priv = phosh_app_grid_get_instance_private (self);
+  
+  return gtk_search_entry_handle_event (GTK_SEARCH_ENTRY (priv->search),
+                                        (GdkEvent *) event);
 }

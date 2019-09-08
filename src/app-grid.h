@@ -22,7 +22,9 @@ struct _PhoshAppGridClass
   GtkBoxClass parent_class;
 };
 
-void phosh_app_grid_reset (PhoshAppGrid *self);
-GtkWidget *phosh_app_grid_new (void);
+void       phosh_app_grid_reset        (PhoshAppGrid *self);
+GtkWidget *phosh_app_grid_new          (void);
+gboolean   phosh_app_grid_handle_event (PhoshAppGrid *self,
+                                        GdkEvent     *event);
 
 G_END_DECLS
