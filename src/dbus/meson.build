@@ -1,5 +1,6 @@
 # DBus client interfaces
 generated_dbus_sources = []
+generated_search_dbus_sources = []
 
 
 # iio-sensor-proxy
@@ -40,8 +41,15 @@ generated_dbus_sources += gnome.gdbus_codegen('phosh-screen-saver-dbus',
 					      interface_prefix: 'org.gnome',
 					      namespace: 'PhoshScreenSaverDbus')
 
-# Search providers
-generated_dbus_sources += gnome.gdbus_codegen('gnome-shell-search-provider',
-                                              'org.gnome.Shell.SearchProvider2.xml',
-                                              interface_prefix: 'org.gnome.Shell',
-                                              namespace: 'PhoshDBus')
+# Shell Search
+generated_search_dbus_sources += gnome.gdbus_codegen('gnome-shell-search-provider',
+                                                     'org.gnome.Shell.SearchProvider2.xml',
+                                                     interface_prefix: 'org.gnome.Shell',
+                                                     namespace: 'PhoshDBus')
+
+generated_search_dbus_sources += gnome.gdbus_codegen('phosh-searchd',
+                                                     'sm.puri.Phosh.Search.xml',
+                                                     interface_prefix: 'sm.puri.Phosh',
+                                                     namespace: 'PhoshSearchDBus')
+
+phosh_dbus_inc = include_directories('.')

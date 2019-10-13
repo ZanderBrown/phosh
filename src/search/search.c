@@ -12,7 +12,6 @@
 
 #include "search.h"
 #include "search-provider.h"
-#include "app-list-model.h"
 
 #define GROUP_NAME "Shell Search Provider"
 #define SEARCH_PROVIDERS_SCHEMA "org.gnome.desktop.search-providers"
@@ -375,11 +374,8 @@ reload_providers (GSettings   *settings,
 }
 
 static void
-reload_providers_apps_changed (GListModel  *list,
-                               guint        position,
-                               guint        removed,
-                               guint        added,
-                               PhoshSearch *self)
+reload_providers_apps_changed (GAppInfoMonitor *monitor,
+                               PhoshSearch     *self)
 {
   reload_providers (NULL, NULL, self);
 }
@@ -410,7 +406,7 @@ phosh_search_init (PhoshSearch *self)
   g_signal_connect (priv->settings, "changed::sort-order",
                     G_CALLBACK (reload_providers), self);
 
-  g_signal_connect (phosh_app_list_model_get_default (), "items-changed",
+  g_signal_connect (g_app_info_monitor_get (), "changed",
                     G_CALLBACK (reload_providers_apps_changed), self);
 
   reload_providers (NULL, NULL, self);
@@ -552,6 +548,28 @@ search_timeout (gpointer user_data)
   return G_SOURCE_REMOVE;
 }
 
+
+// Taken from gstrfuncs.c in GLib 2.60
+static gboolean
+strv_equal (const gchar * const *strv1,
+            const gchar * const *strv2)
+{
+  g_return_val_if_fail (strv1 != NULL, FALSE);
+  g_return_val_if_fail (strv2 != NULL, FALSE);
+
+  if (strv1 == strv2)
+    return TRUE;
+
+  for (; *strv1 != NULL && *strv2 != NULL; strv1++, strv2++)
+    {
+      if (!g_str_equal (*strv1, *strv2))
+        return FALSE;
+    }
+
+  return (*strv1 == NULL && *strv2 == NULL);
+}
+
+
 void
 phosh_search_set_terms (PhoshSearch *self,
                         GStrv        terms)
@@ -567,8 +585,8 @@ phosh_search_set_terms (PhoshSearch *self,
   int len = 0;
 
   if (priv->terms &&
-      g_strv_equal ((const char *const *) priv->terms,
-                    (const char *const *) terms)) {
+      strv_equal ((const char *const *) priv->terms,
+                  (const char *const *) terms)) {
     return;
   }
 

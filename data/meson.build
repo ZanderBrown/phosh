@@ -68,3 +68,12 @@ install_data('phoc.ini', install_dir : pkgdatadir)
 install_data('wayland-sessions/phosh.desktop',
 	     install_dir : 'share/wayland-sessions')
 
+
+# Search
+
+servicedir = join_paths([datadir, 'dbus-1', 'services'])
+
+configure_file(input: 'sm.puri.Phosh.Search.service.in',
+               output: 'sm.puri.Phosh.Search.service',
+               configuration: desktopconf,
+               install_dir: servicedir)

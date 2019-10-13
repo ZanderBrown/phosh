@@ -1,0 +1,15 @@
+<!DOCTYPE node PUBLIC
+        "-//freedesktop//DTD D-BUS Object Introspection 1.0//EN"
+        "http://www.freedesktop.org/standards/dbus/1.0/introspect.dtd" >
+<node xmlns:doc="http://www.freedesktop.org/dbus/1.0/doc.dtd">
+  <!--
+    Copyright © 2019 Zander Brown <zbrown@gnome.org>
+
+    SPDX-License-Identifier: GPL-3.0+
+
+    Author: Zander Brown <zbrown@gnome.org>
+  -->
+  <interface name="sm.puri.Phosh.Search">
+
+  </interface>
+</node>

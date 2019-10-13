@@ -6,7 +6,6 @@
 
 #include <gio/gio.h>
 #include <gio/gdesktopappinfo.h>
-#include <gdk/gdk.h>
 
 #pragma once
 
@@ -45,9 +44,11 @@ GPtrArray           *phosh_search_provider_limit_results          (GStrv        
                                                                    int                  max);
 void                 phosh_search_provider_activate_result        (PhoshSearchProvider *self,
                                                                    const char          *result,
-                                                                   const char *const   *terms);
+                                                                   const char *const   *terms,
+                                                                   guint                timestamp);
 void                 phosh_search_provider_launch                 (PhoshSearchProvider *self,
-                                                                   const char *const   *terms);
+                                                                   const char *const   *terms,
+                                                                   guint                timestamp);
 void                 phosh_search_provider_get_result_meta        (PhoshSearchProvider *self,
                                                                    GStrv                results,
                                                                    GAsyncReadyCallback  callback,
