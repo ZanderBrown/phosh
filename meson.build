@@ -138,6 +138,11 @@ upower_glib_dep = dependency('upower-glib', version: '>=0.99.1')
 wayland_client_dep = dependency('wayland-client', version: '>=1.14')
 wayland_protos_dep = dependency('wayland-protocols', version: '>=1.12')
 
+add_project_arguments([
+  '-DPOLKIT_AGENT_MAJOR_VERSION=' + libpolkit_agent_dep.version().split('.')[0],
+  '-DPOLKIT_AGENT_MINOR_VERSION=' + libpolkit_agent_dep.version().split('.')[1]
+], language: 'c')
+
 subdir('data')
 subdir('po')
 subdir('protocol')

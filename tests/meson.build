@@ -47,7 +47,7 @@ testlib_sources = [
 ]
 
 testlib = static_library('phoshtest', testlib_sources,
-  dependencies: [phosh_deps, phosh_tool_dep],
+  dependencies: [phosh_deps, phosh_tool_dep, phoshsearch_dep],
   c_args: test_cflags)
 testlib_dep = declare_dependency(
   include_directories: include_directories('.'),

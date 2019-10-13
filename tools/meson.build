@@ -17,7 +17,7 @@ executable('app-scroll', ['app-scroll.c'] + stubs,
            dependencies: phosh_tool_dep)
 
 executable('app-grid-standalone', ['app-grid-standalone.c'] + stubs,
-           dependencies: phosh_tool_dep)
+           dependencies: [phosh_tool_dep, phoshsearch_dep])
 
 executable('image-notify', ['image-notify.c'] + stubs,
            dependencies: phosh_tool_dep)

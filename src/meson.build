@@ -180,10 +180,6 @@ phosh_deps = [
   cc.find_library('rt', required: false),
 ]
 
-add_project_arguments([
-  '-DPOLKIT_AGENT_MAJOR_VERSION=' + libpolkit_agent_dep.version().split('.')[0],
-  '-DPOLKIT_AGENT_MINOR_VERSION=' + libpolkit_agent_dep.version().split('.')[1]
-], language: 'c')
 
 phosh_inc = include_directories('.')
 # A static library used by tests and tools
@@ -195,7 +191,8 @@ phosh_tool_dep = declare_dependency(sources: libphosh_generated_sources,
 
 if get_option('gtk_doc')
 # We only build the shared lib for gtk-doc:
-phosh_doc_lib = library('phosh-doc', [libphosh_sources, libphosh_tool_sources], dependencies: phosh_deps)
+phosh_doc_lib = library('phosh-doc', [libphosh_sources, libphosh_tool_sources],
+                        dependencies: [phosh_deps, phoshsearch_dep])
 phosh_doc_dep = declare_dependency(sources: libphosh_generated_sources,
   include_directories: [root_inc, phosh_inc],
   link_with: phosh_doc_lib,

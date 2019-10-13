@@ -10,8 +10,10 @@
 
 #define G_LOG_DOMAIN "phosh-search-provider"
 
+#include <gdk-pixbuf/gdk-pixbuf.h>
+
 #include "search-provider.h"
-#include "dbus/gnome-shell-search-provider.h"
+#include "gnome-shell-search-provider.h"
 
 struct _PhoshSearchProviderResultMeta {
   char  *id;
@@ -431,14 +433,15 @@ result_activated (GObject      *source,
 void
 phosh_search_provider_activate_result (PhoshSearchProvider *self,
                                        const char          *result,
-                                       const char *const   *terms)
+                                       const char *const   *terms,
+                                       guint                timestamp)
 {
   PhoshSearchProviderPrivate *priv = phosh_search_provider_get_instance_private (self);
 
   phosh_dbus_search_provider2_call_activate_result (PHOSH_DBUS_SEARCH_PROVIDER2 (priv->proxy),
                                                     result,
                                                     terms,
-                                                    GDK_CURRENT_TIME,
+                                                    timestamp,
                                                     priv->cancellable,
                                                     result_activated,
                                                     NULL);
@@ -462,13 +465,14 @@ search_launched (GObject      *source,
 
 void
 phosh_search_provider_launch (PhoshSearchProvider *self,
-                              const char *const   *terms)
+                              const char *const   *terms,
+                              guint                timestamp)
 {
   PhoshSearchProviderPrivate *priv = phosh_search_provider_get_instance_private (self);
 
   phosh_dbus_search_provider2_call_launch_search (PHOSH_DBUS_SEARCH_PROVIDER2 (priv->proxy),
                                                   terms,
-                                                  GDK_CURRENT_TIME,
+                                                  timestamp,
                                                   priv->cancellable,
                                                   search_launched,
                                                   NULL);
