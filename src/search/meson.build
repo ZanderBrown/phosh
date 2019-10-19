@@ -14,10 +14,8 @@ phosh_search_sources = [
 ]
 
 phoshsearch_sources = [
-  'search.c',
-  'search.h',
-  'search-provider.c',
-  'search-provider.h',
+  'search-client.c',
+  'search-client.h',
   'search-result-meta.c',
   'search-result-meta.h',
   'search-source.c',
@@ -38,8 +36,7 @@ phoshsearch_lib = library('phoshsearch', phoshsearch_sources,
                           install: true)
 phoshsearch_inc = include_directories('.')
 
-phoshsearch_dep = declare_dependency(sources: phoshsearch_sources,
-                                     include_directories: [phoshsearch_inc],
+phoshsearch_dep = declare_dependency(include_directories: [phosh_dbus_inc, phoshsearch_inc],
                                      link_with: phoshsearch_lib,
                                      dependencies: phoshsearch_deps)
 
