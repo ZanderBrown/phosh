@@ -6,99 +6,16 @@
  * https://gitlab.gnome.org/GNOME/gnome-shell/blob/0a7e717e0e125248bace65e170a95ae12e3cdf38/js/ui/remoteSearch.js
  *
  * SPDX-License-Identifier: GPL-3.0+
+ *
+ * Author: Zander Brown <zbrown@gnome.org>
  */
-
-#define G_LOG_DOMAIN "phosh-search-provider"
 
 #include <gdk-pixbuf/gdk-pixbuf.h>
 
 #include "search-provider.h"
+#include "search-result-meta.h"
 #include "gnome-shell-search-provider.h"
 
-struct _PhoshSearchProviderResultMeta {
-  char  *id;
-  char  *name;
-  char  *desc;
-  char  *clipboard_text;
-  GIcon *icon;
-};
-
-static gpointer
-phosh_search_provider_result_meta_copy (gpointer source)
-{
-  PhoshSearchProviderResultMeta *copy;
-  PhoshSearchProviderResultMeta *self = source;
-
-  g_return_val_if_fail (self != NULL, NULL);
-
-  copy = g_new (PhoshSearchProviderResultMeta, 1);
-  copy->id = g_strdup (self->id);
-  copy->name = g_strdup (self->name);
-  copy->desc = g_strdup (self->desc);
-  copy->icon = g_object_ref (self->icon);
-  copy->clipboard_text = g_strdup (self->clipboard_text);
-
-  return copy;
-}
-
-void
-phosh_search_provider_result_meta_free (gpointer source)
-{
-  PhoshSearchProviderResultMeta *self = source;
-
-  g_clear_pointer (&self->id, g_free);
-  g_clear_pointer (&self->name, g_free);
-  g_clear_pointer (&self->desc, g_free);
-  g_clear_object (&self->icon);
-  g_clear_pointer (&self->clipboard_text, g_free);
-
-  g_free (self);
-}
-
-G_DEFINE_BOXED_TYPE (PhoshSearchProviderResultMeta,
-                     phosh_search_provider_result_meta,
-                     phosh_search_provider_result_meta_copy,
-                     phosh_search_provider_result_meta_free)
-
-const char *
-phosh_search_provider_result_meta_get_id (PhoshSearchProviderResultMeta *self)
-{
-  g_return_val_if_fail (self != NULL, NULL);
-
-  return self->id;
-}
-
-const char *
-phosh_search_provider_result_meta_get_name (PhoshSearchProviderResultMeta *self)
-{
-  g_return_val_if_fail (self != NULL, NULL);
-
-  return self->name;
-}
-
-const char *
-phosh_search_provider_result_meta_get_description (PhoshSearchProviderResultMeta *self)
-{
-  g_return_val_if_fail (self != NULL, NULL);
-
-  return self->desc;
-}
-
-const char *
-phosh_search_provider_result_meta_get_clipboard_text (PhoshSearchProviderResultMeta *self)
-{
-  g_return_val_if_fail (self != NULL, NULL);
-
-  return self->clipboard_text;
-}
-
-GIcon *
-phosh_search_provider_result_meta_get_icon (PhoshSearchProviderResultMeta *self)
-{
-  g_return_val_if_fail (self != NULL, NULL);
-
-  return self->icon;
-}
 
 typedef struct _PhoshSearchProviderPrivate PhoshSearchProviderPrivate;
 struct _PhoshSearchProviderPrivate {
@@ -533,13 +450,20 @@ got_result_meta (GObject      *source,
   struct GetMetaData *data = user_data;
   GVariant *val = NULL;
   GVariantIter iter;
+  g_autofree char *bus_path = NULL;
+
+  g_object_get (data->self, "bus-path", &bus_path, NULL);
 
   phosh_dbus_search_provider2_call_get_result_metas_finish (PHOSH_DBUS_SEARCH_PROVIDER2 (source),
                                                             &metas,
                                                             res,
                                                             &error);
 
-  results = g_ptr_array_new_full (100, phosh_search_provider_result_meta_free);
+  if (error) {
+    g_warning ("[%s]: Failed get result meta: %s", bus_path, error->message);
+  }
+
+  results = g_ptr_array_new_full (100, (GDestroyNotify) phosh_search_result_meta_unref);
 
   // Some providers decide to provide NULL instead of an empty array
   // thus we do what JS does and map NULL to an empty array
@@ -554,8 +478,8 @@ got_result_meta (GObject      *source,
     g_autofree char *name = NULL;
     g_autofree char *desc = NULL;
     g_autofree char *clipboard = NULL;
-    GIcon *icon = NULL;
-    PhoshSearchProviderResultMeta *meta;
+    g_autoptr (GIcon) icon = NULL;
+    PhoshSearchResultMeta *meta;
 
     g_variant_dict_init (&dict, val);
 
@@ -576,18 +500,9 @@ got_result_meta (GObject      *source,
 
     icon = get_result_icon (data->self, &dict);
 
-    meta = g_new (PhoshSearchProviderResultMeta, 1);
-    meta->id = g_strdup (id);
-    meta->name = g_strdup (name);
-    meta->desc = g_strdup (desc);
-    meta->icon = icon;
-    meta->clipboard_text = g_strdup (clipboard);
+    meta = phosh_search_result_meta_new (id, name, desc, icon, clipboard);
 
     g_ptr_array_add (results, meta);
-  }
-
-  if (error) {
-    g_warning ("Failed get result meta: %s", error->message);
   }
 
   g_task_return_pointer (G_TASK (data->task),
@@ -631,23 +546,22 @@ phosh_search_provider_get_result_meta_finish (PhoshSearchProvider  *self,
   return g_task_propagate_pointer (G_TASK (res), error);
 }
 
+
 struct GetResultsData {
   gboolean inital;
   GTask *task;
   PhoshSearchProvider *self;
 };
 
+
 static void
 got_results (GObject      *source,
              GAsyncResult *res,
              gpointer      user_data)
 {
-  PhoshSearchProviderPrivate *priv;
   g_autoptr (GError) error = NULL;
   struct GetResultsData *data = user_data;
   GStrv results = NULL;
-
-  priv = phosh_search_provider_get_instance_private (data->self);
 
   if (data->inital) {
     phosh_dbus_search_provider2_call_get_initial_result_set_finish (PHOSH_DBUS_SEARCH_PROVIDER2 (source),

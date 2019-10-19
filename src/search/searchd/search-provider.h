@@ -2,6 +2,8 @@
  * Copyright © 2019 Zander Brown <zbrown@gnome.org>
  *
  * SPDX-License-Identifier: GPL-3.0+
+ *
+ * Author: Zander Brown <zbrown@gnome.org>
  */
 
 #include <gio/gio.h>
@@ -10,21 +12,6 @@
 #pragma once
 
 G_BEGIN_DECLS
-
-#define PHOSH_TYPE_SEARCH_PROVIDER_RESULT_META (phosh_search_provider_result_meta_get_type ())
-
-typedef struct _PhoshSearchProviderResultMeta PhoshSearchProviderResultMeta;
-
-GType           phosh_search_provider_result_meta_get_type           (void);
-void            phosh_search_provider_result_meta_free               (gpointer                       source);
-const char     *phosh_search_provider_result_meta_get_id             (PhoshSearchProviderResultMeta *self);
-const char     *phosh_search_provider_result_meta_get_name           (PhoshSearchProviderResultMeta *self);
-const char     *phosh_search_provider_result_meta_get_description    (PhoshSearchProviderResultMeta *self);
-GIcon          *phosh_search_provider_result_meta_get_icon           (PhoshSearchProviderResultMeta *self);
-const char     *phosh_search_provider_result_meta_get_clipboard_text (PhoshSearchProviderResultMeta *self);
-
-G_DEFINE_AUTOPTR_CLEANUP_FUNC (PhoshSearchProviderResultMeta,
-                               phosh_search_provider_result_meta_free)
 
 #define PHOSH_TYPE_SEARCH_PROVIDER phosh_search_provider_get_type()
 G_DECLARE_DERIVABLE_TYPE (PhoshSearchProvider, phosh_search_provider, PHOSH, SEARCH_PROVIDER, GObject)
