@@ -78,7 +78,7 @@ phosh_app_grid_button_get_property (GObject    *object,
                                     GParamSpec *pspec)
 {
   PhoshAppGridButton *self = PHOSH_APP_GRID_BUTTON (object);
- 
+
   switch (property_id) {
     case PROP_APP_INFO:
       g_value_set_object (value, phosh_app_grid_button_get_app_info (self));
@@ -218,9 +218,9 @@ phosh_app_grid_button_class_init (PhoshAppGridButtonClass *klass)
 
   /**
    * PhoshAppGridButton:is-favorite:
-   * 
+   *
    * %TRUE when the application is currently favorited
-   * 
+   *
    * Stability: Private
    */
   props[PROP_IS_FAVORITE] =
@@ -232,12 +232,12 @@ phosh_app_grid_button_class_init (PhoshAppGridButtonClass *klass)
 
   /**
    * PhoshAppGridButton:mode:
-   * 
+   *
    * The #PhoshAppGridButtonMode of the button
-   * 
+   *
    * In %PHOSH_APP_GRID_BUTTON_FAVORITES the label is
    * hidden
-   * 
+   *
    * Stability: Private
    */
   props[PROP_MODE] =
@@ -462,7 +462,7 @@ phosh_app_grid_button_set_app_info (PhoshAppGridButton *self,
                                  priv->favorite_changed_watcher);
     priv->favorite_changed_watcher = 0;
   }
-  
+
   if (info) {
     priv->info = g_object_ref (info);
 
@@ -478,9 +478,13 @@ phosh_app_grid_button_set_app_info (PhoshAppGridButton *self,
     icon = g_app_info_get_icon (priv->info);
     if (G_UNLIKELY (icon == NULL)) {
       gtk_image_set_from_icon_name (GTK_IMAGE (priv->icon),
-                                    "application-x-executable-symbolic",
+                                    PHOSH_APP_UNKNOWN_ICON,
                                     GTK_ICON_SIZE_DIALOG);
     } else {
+      if (G_IS_THEMED_ICON (icon)) {
+        g_themed_icon_append_name (G_THEMED_ICON (icon),
+                                   PHOSH_APP_UNKNOWN_ICON);
+      }
       gtk_image_set_from_gicon (GTK_IMAGE (priv->icon),
                                 icon,
                                 GTK_ICON_SIZE_DIALOG);
@@ -522,7 +526,7 @@ phosh_app_grid_button_set_app_info (PhoshAppGridButton *self,
   } else {
     gtk_label_set_label (GTK_LABEL (priv->label), _("Application"));
     gtk_image_set_from_icon_name (GTK_IMAGE (priv->icon),
-                                  "application-x-executable",
+                                  PHOSH_APP_UNKNOWN_ICON,
                                   GTK_ICON_SIZE_DIALOG);
 
     gtk_widget_set_sensitive (GTK_WIDGET (self), FALSE);

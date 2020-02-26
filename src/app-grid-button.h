@@ -12,13 +12,21 @@
 
 G_BEGIN_DECLS
 
+
+/**
+ * PHOSH_APP_UNKNOWN_ICON:
+ *
+ * Icon name to use for apps we can't identify or whose icon is invalid
+ */
+#define PHOSH_APP_UNKNOWN_ICON "app-icon-unknown"
+
 #define PHOSH_TYPE_APP_GRID_BUTTON phosh_app_grid_button_get_type()
 
 /**
  * PhoshAppGridButtonMode:
  * @PHOSH_APP_GRID_BUTTON_LAUNCHER: Standard mode used in drawer/search etc
  * @PHOSH_APP_GRID_BUTTON_FAVORITES: Fovourites area (doesn't show label)
- * 
+ *
  * Display mode of a #PhoshAppGridButton
  */
 typedef enum /*< enum,prefix=PHOSH >*/
