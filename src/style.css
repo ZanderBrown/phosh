@@ -184,7 +184,7 @@ phosh-notification-content {
 }
 
 phosh-notification-content .message-area {
-  padding: 12px;
+  padding: 8px 12px;
 }
 
 phosh-notification-content .message-area image {
