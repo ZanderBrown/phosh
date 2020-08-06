@@ -36,6 +36,7 @@ phoshsearch_lib = library('phoshsearch', phoshsearch_sources,
                           install: true)
 phoshsearch_inc = include_directories('.')
 
-phoshsearch_dep = declare_dependency(include_directories: [phosh_dbus_inc, phoshsearch_inc],
+phoshsearch_dep = declare_dependency(sources: generated_search_dbus_sources,
+                                     include_directories: [phosh_dbus_inc, phoshsearch_inc],
                                      link_with: phoshsearch_lib,
                                      dependencies: phoshsearch_deps)

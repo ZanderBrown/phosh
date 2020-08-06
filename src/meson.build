@@ -175,6 +175,7 @@ phosh_deps = [
   network_agent_dep,
   upower_glib_dep,
   wayland_client_dep,
+  phoshsearch_dep,
   cc.find_library('pam', required: true),
   cc.find_library('m', required: false),
   cc.find_library('rt', required: false),
