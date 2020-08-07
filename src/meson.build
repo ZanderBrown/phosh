@@ -3,6 +3,7 @@ subdir('monitor')
 subdir('notifications')
 subdir('osk')
 subdir('wwan')
+subdir('search')
 subdir('settings')
 subdir('gtk-list-models')
 
@@ -76,6 +77,7 @@ libphosh_tool_sources = [
   'util.h',
   phosh_gtk_list_models_sources,
   phosh_notifications_sources,
+  phosh_search_sources,
   libphosh_generated_sources,
 ]
 
