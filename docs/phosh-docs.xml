@@ -98,6 +98,11 @@
     </chapter>
 
     <chapter id="utils">
+      <title>Search</title>
+      <xi:include href="xml/search-result-meta.xml"/>
+    </chapter>
+
+    <chapter id="utils">
       <title>Utilities</title>
       <xi:include href="xml/brightness.xml"/>
       <xi:include href="xml/util.xml"/>
