@@ -70,6 +70,7 @@ tests = [
   'quick-setting',
   'search-result',
   'search-result-meta',
+  'search-source',
   'status-icon',
 ]
 
