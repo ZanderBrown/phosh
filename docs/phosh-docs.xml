@@ -97,12 +97,13 @@
       <xi:include href="xml/wwaninfo.xml"/>
     </chapter>
 
-    <chapter id="utils">
+    <chapter id="search">
       <title>Search</title>
       <xi:include href="xml/search-result.xml"/>
       <section>
         <title>Search Library</title>
         <xi:include href="xml/search-result-meta.xml"/>
+        <xi:include href="xml/search-source.xml"/>
       </section>
     </chapter>
 
