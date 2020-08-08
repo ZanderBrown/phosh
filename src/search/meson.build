@@ -40,5 +40,4 @@ phoshsearch_dep = declare_dependency(include_directories: [phosh_dbus_inc, phosh
                                      link_with: phoshsearch_lib,
                                      dependencies: phoshsearch_deps)
 
-subdir('app-search')
 subdir('searchd')
