@@ -69,6 +69,7 @@ tests = [
   'overview',
   'quick-setting',
   'search-result',
+  'search-result-list',
   'search-result-meta',
   'search-result-source',
   'search-source',
