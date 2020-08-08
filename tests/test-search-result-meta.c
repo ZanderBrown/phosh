@@ -54,8 +54,8 @@ test_phosh_search_result_meta_refs (void)
 
   g_assert_null (meta);
 
-  NULL_INSTANCE_CALL (phosh_search_result_meta_ref);
-  NULL_INSTANCE_CALL (phosh_search_result_meta_unref);
+  NULL_INSTANCE_CALL (phosh_search_result_meta_ref, "self != NULL");
+  NULL_INSTANCE_CALL (phosh_search_result_meta_unref, "self != NULL");
 }
 
 
@@ -86,11 +86,20 @@ test_phosh_search_result_meta_null_instance (void)
 {
   g_autoptr (PhoshSearchResultMeta) meta = NULL;
 
-  NULL_INSTANCE_CALL_RETURN (phosh_search_result_meta_get_id, NULL);
-  NULL_INSTANCE_CALL_RETURN (phosh_search_result_meta_get_title, NULL);
-  NULL_INSTANCE_CALL_RETURN (phosh_search_result_meta_get_description, NULL);
-  NULL_INSTANCE_CALL_RETURN (phosh_search_result_meta_get_icon, NULL);
-  NULL_INSTANCE_CALL_RETURN (phosh_search_result_meta_get_clipboard_text, NULL);
+  NULL_INSTANCE_CALL_RETURN (phosh_search_result_meta_get_id,
+                             "self != NULL",
+                             NULL);
+  NULL_INSTANCE_CALL_RETURN (phosh_search_result_meta_get_title,
+                             "self != NULL",
+                             NULL);
+  NULL_INSTANCE_CALL_RETURN (phosh_search_result_meta_get_description,
+                             "self != NULL",
+                             NULL);
+  NULL_INSTANCE_CALL_RETURN (phosh_search_result_meta_get_icon,
+                             "self != NULL",
+                             NULL);
+  NULL_INSTANCE_CALL_RETURN (phosh_search_result_meta_get_clipboard_text,
+                             "self != NULL", NULL);
 }
 
 

@@ -68,6 +68,7 @@ tests = [
   'notification-source',
   'overview',
   'quick-setting',
+  'search-result',
   'search-result-meta',
   'status-icon',
 ]
