@@ -100,6 +100,7 @@
     <chapter id="search">
       <title>Search</title>
       <xi:include href="xml/search-result.xml"/>
+      <xi:include href="xml/search-result-source.xml"/>
       <section>
         <title>Search Library</title>
         <xi:include href="xml/search-result-meta.xml"/>
