@@ -353,3 +353,17 @@ phosh-media-player box *:disabled {
   color: white;
   -gtk-icon-effect: none;
 }
+
+phosh-search-result-content {
+  border-radius: 6px;
+  border: 1px solid transparent;
+  -gtk-outline-radius: 6px;
+}
+
+phosh-search-result-content:hover {
+  background: rgba(0, 0, 0, 0.2);
+}
+
+phosh-search-result-content:focus {
+  border-color: @theme_selected_bg_color;
+}
