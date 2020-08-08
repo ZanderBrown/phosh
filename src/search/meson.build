@@ -3,6 +3,8 @@ phosh_search_sources = [
   'search/search-result.h',
   'search/search-result-content.c',
   'search/search-result-content.h',
+  'search/search-result-frame.c',
+  'search/search-result-frame.h',
   'search/search-result-list.c',
   'search/search-result-list.h',
   'search/search-result-meta.c',

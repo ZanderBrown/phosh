@@ -101,6 +101,7 @@
       <title>Search</title>
       <xi:include href="xml/search-result.xml"/>
       <xi:include href="xml/search-result-content.xml"/>
+      <xi:include href="xml/search-result-frame.xml"/>
       <xi:include href="xml/search-result-list.xml"/>
       <xi:include href="xml/search-result-source.xml"/>
       <section>
