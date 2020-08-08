@@ -354,6 +354,25 @@ phosh-media-player box *:disabled {
   -gtk-icon-effect: none;
 }
 
+phosh-search-result-frame {
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background-color: #282828;
+  margin: 12px;
+  box-shadow: 0px 0px 5px 0px rgba(0, 0, 0, 0.33),
+              0px 5px 6px 0px rgba(0, 0, 0, 0.07),
+              0px 0px 0px 1px rgba(0, 0, 0, 0.2);
+  -gtk-outline-radius: 6px;
+}
+
+phosh-search-result-frame:focus {
+  border-color: @theme_selected_bg_color;
+}
+
+phosh-search-result-frame list {
+  background-color: #282828;
+}
+
 phosh-search-result-content {
   border-radius: 6px;
   border: 1px solid transparent;

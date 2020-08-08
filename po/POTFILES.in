@@ -37,6 +37,7 @@ src/quick-setting.c
 src/rotateinfo.c
 src/screen-saver-manager.c
 src/sensor-proxy-manager.c
+src/search/search-result-frame.c
 src/session.c
 src/session-presence.c
 src/settings.c
