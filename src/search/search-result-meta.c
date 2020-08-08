@@ -25,6 +25,8 @@
  *
  * A #PhoshSearchResultMeta can be serialised to a #GVariant for transport
  * over dbus
+ *
+ * #PhoshSearchResult provides a #GObject wrapper
  */
 
 
@@ -95,7 +97,7 @@ G_DEFINE_BOXED_TYPE (PhoshSearchResultMeta,
  * Get the result id, note this *should* be unique withing the source of @self
  * but this is not guaranteed
  *
- * Return: (transfer none): the result "id" of @self
+ * Returns: (transfer none): the result "id" of @self
  */
 const char *
 phosh_search_result_meta_get_id (PhoshSearchResultMeta *self)

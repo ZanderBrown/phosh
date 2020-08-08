@@ -99,7 +99,11 @@
 
     <chapter id="utils">
       <title>Search</title>
-      <xi:include href="xml/search-result-meta.xml"/>
+      <xi:include href="xml/search-result.xml"/>
+      <section>
+        <title>Search Library</title>
+        <xi:include href="xml/search-result-meta.xml"/>
+      </section>
     </chapter>
 
     <chapter id="utils">
