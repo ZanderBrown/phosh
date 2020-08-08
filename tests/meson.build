@@ -58,6 +58,7 @@ tests = [
   'activity',
   'app-grid-button',
   'app-list-model',
+  'app-search',
   'connectivity-info',
   'favourite-model',
   'media-player',

@@ -1,0 +1,3 @@
+[D-BUS Service]
+Name=sm.puri.Phosh.AppSearch
+Exec=@libexecdir@/phosh-app-search

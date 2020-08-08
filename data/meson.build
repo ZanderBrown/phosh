@@ -71,9 +71,26 @@ install_data('wayland-sessions/phosh.desktop',
 
 # Search
 
+desktop_file = configure_file(input: 'sm.puri.Phosh.AppSearch.desktop.in',
+                              output: 'sm.puri.Phosh.AppSearch.desktop',
+                              configuration: desktopconf,
+                              install_dir: desktopdir)
+
+desktop_utils = find_program('desktop-file-validate', required: false)
+if desktop_utils.found() and get_option('tests')
+  test('Validate desktop file', desktop_utils,
+    args: [desktop_file]
+  )
+endif
+
 servicedir = join_paths([datadir, 'dbus-1', 'services'])
 
 configure_file(input: 'sm.puri.Phosh.Search.service.in',
                output: 'sm.puri.Phosh.Search.service',
+               configuration: desktopconf,
+               install_dir: servicedir)
+
+configure_file(input: 'sm.puri.Phosh.AppSearch.service.in',
+               output: 'sm.puri.Phosh.AppSearch.service',
                configuration: desktopconf,
                install_dir: servicedir)

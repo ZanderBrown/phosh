@@ -1,0 +1,7 @@
+[Desktop Entry]
+Name=App Search
+Comment=App Search Provider
+Exec=@libexecdir@/phosh-app-search
+NoDisplay=true
+Type=Application
+DBusActivatable=true
