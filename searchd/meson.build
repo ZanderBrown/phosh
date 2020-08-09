@@ -6,5 +6,5 @@ searchd_args = [
 executable('phosh-searchd', ['searchd.c', 'search-provider.c'],
            dependencies: phoshsearch_dep,
            c_args: searchd_args,
-           install_path: libexecdir,
+           install_dir: libexecdir,
            install: true)

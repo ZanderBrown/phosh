@@ -39,5 +39,3 @@ phoshsearch_inc = include_directories('.')
 phoshsearch_dep = declare_dependency(include_directories: [phosh_dbus_inc, phoshsearch_inc],
                                      link_with: phoshsearch_lib,
                                      dependencies: phoshsearch_deps)
-
-subdir('searchd')
