@@ -2,9 +2,15 @@
 set -e
 
 ABS_BUILDDIR='@ABS_BUILDDIR@'
+ABS_SRCDIR='@ABS_SRCDIR@'
 
 export GSETTINGS_SCHEMA_DIR="${ABS_BUILDDIR}/data"
 export G_MESSAGES_DEBUG=all
 export GNOTIFICATION_BACKEND=freedesktop
+export XDG_CONFIG_HOME="${ABS_SRCDIR}/tests/user/config/"
+export XDG_CONFIG_DIRS="${ABS_SRCDIR}/tests/system/config/"
+export XDG_DATA_HOME="${ABS_SRCDIR}/tests/user/share/"
+export XDG_DATA_DIRS="${ABS_SRCDIR}/tests/system/share/":$XDG_DATA_DIRS
+
 set -x
 exec $@

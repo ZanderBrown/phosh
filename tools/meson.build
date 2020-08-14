@@ -37,3 +37,6 @@ executable('notify-server-standalone', ['notify-server-standalone.c'] + stubs,
 
 executable('dump-app-list', ['dump-app-list.c'],
            dependencies: phosh_tool_dep)
+
+executable('search-view', ['search-view.c'] + stubs,
+           dependencies: phosh_tool_dep)
